@@ -42,7 +42,7 @@ async function detectApiVersion(api:any, provider:any): Promise<string> {
   const vals = [api?.apiVersion, api?.version, provider?.apiVersion, provider?.version];
   for (const v of vals) if (typeof v === "string" && v) return v;
   const fns = [api?.getVersion, provider?.getVersion, api?.info, provider?.info];
-  for (const fn of fns) try { if (typeof fn==="function") { const v = await fn.call(api ?? provider); if (v) return String(v); } } catch {}
+  for (const fn of fns) try { if (typeof fn==="function") { const v = await fn.call(api ?? provider); if (v) return v; } } catch {}
   return "—";
 }
 
@@ -87,14 +87,24 @@ export default function App() {
       setWalletName(detectWalletLabel(api, provider));
       setApiVersion(await detectApiVersion(api, provider));
 
-      const state: WalletState | null = (await readState(api)) ?? (await readState(provider)) ?? null;
+      const state: WalletState | null =
+        (await readState(api)) ?? (await readState(provider)) ?? null;
       const address = state?.address ?? state?.addresses?.[0] ?? state?.account?.address ?? "—";
       setAddr(address);
       setTDustBalance(deriveTDustBalanceFromState(state));
 
       const w = api ?? provider;
-      setCapWalletTransfer(typeof w?.balanceAndProveTransaction==="function" && typeof w?.submitTransaction==="function");
-      setCapCoinEnum(typeof w?.listCoins==="function" || typeof w?.getUtxos==="function" || typeof w?.coins==="function" || typeof w?.serializeState==="function" || typeof w?.state==="function");
+      setCapWalletTransfer(
+        typeof w?.balanceAndProveTransaction==="function" &&
+        typeof w?.submitTransaction==="function"
+      );
+      setCapCoinEnum(
+        typeof w?.listCoins==="function" ||
+        typeof w?.getUtxos==="function" ||
+        typeof w?.coins==="function" ||
+        typeof w?.serializeState==="function" ||
+        typeof w?.state==="function"
+      );
 
       setShieldAddr(state?.address ?? "—");
       setShieldCPK(state?.coinPublicKey ?? "—");
@@ -116,22 +126,44 @@ export default function App() {
   }, []);
 
   return (
-    <div>
+    <div style={{ minHeight: "100vh", backgroundColor: "#f9fafb" }}>
       <Navbar />
-      <main style={{ paddingTop:"5rem", textAlign:"center" }}>
-        <h1 style={{ fontSize:"2.25rem", marginBottom:"0.5rem" }}>🌙 Welcome to your Midnight dApp</h1>
-        <p style={{ color:"#94a3b8", marginBottom:"1.25rem" }}>Start building with Vite + React + Midnight Wallet.</p>
+      <main
+        style={{
+          paddingTop: "5rem",
+          paddingBottom: "3rem",
+          maxWidth: 960,
+          margin: "0 auto",
+          paddingInline: "1.5rem",
+          textAlign: "center",
+        }}
+      >
+        <h1 style={{ fontSize: "2.25rem", marginBottom: "0.5rem", color: "#111827" }}>
+          Welcome to my_Medical
+        </h1>
+        <p style={{ color: "#4b5563", marginBottom: "1.25rem" }}>
+          Your Lace Wallet authentication and Midnight identity.
+        </p>
 
-        <Card title="Wallet Summary" onRefresh={() => loadWalletInfoNonInteractive()} loading={loading}>
+        <Card
+          title="Wallet Summary"
+          onRefresh={() => loadWalletInfoNonInteractive()}
+          loading={loading}
+        >
           <Row label="Provider" value={providerName} />
           <Row label="Wallet" value={walletName} />
           <Row label="API version" value={apiVersion} />
           <Row label="Address (heuristic)" value={addr} />
           <Row label="tDUST Balance" value={tDustBalance} />
-          <Row label="Capabilities" value={`walletTransfer=${String(capWalletTransfer)} coinEnum=${String(capCoinEnum)}`} />
+          <Row
+            label="Capabilities"
+            value={`walletTransfer=${String(capWalletTransfer)} coinEnum=${String(
+              capCoinEnum
+            )}`}
+          />
         </Card>
 
-        <Card title="Wallet Keys & Addresses" style={{ marginTop:16 }}>
+        <Card title="Wallet Keys & Addresses" style={{ marginTop: 16 }}>
           <Row label="Shield Address" value={shieldAddr} />
           <Row label="Shield CPK" value={shieldCPK} />
           <Row label="Shield EPK" value={shieldEPK} />
@@ -144,18 +176,52 @@ export default function App() {
   );
 }
 
-function Card({ title, children, onRefresh, loading, style }:{
-  title:string; children:React.ReactNode; onRefresh?:()=>void; loading?:boolean; style?:React.CSSProperties;
+function Card({
+  title,
+  children,
+  onRefresh,
+  loading,
+  style,
+}: {
+  title: string;
+  children: React.ReactNode;
+  onRefresh?: () => void;
+  loading?: boolean;
+  style?: React.CSSProperties;
 }) {
   return (
-    <div style={{ background:"#0b1220", color:"#e2e8f0", padding:16, borderRadius:12, maxWidth:960, margin:"0 auto", textAlign:"left", ...style }}>
-      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:10 }}>
+    <div
+      style={{
+        background: "#ffffff",
+        color: "#111827",
+        padding: 16,
+        borderRadius: 12,
+        maxWidth: 960,
+        margin: "0 auto",
+        textAlign: "left",
+        border: "1px solid #e5e7eb",
+        boxShadow: "0 4px 10px rgba(15, 23, 42, 0.04)",
+        marginTop: 16,
+        ...style,
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
         <strong>{title}</strong>
         {onRefresh && (
-          <button onClick={onRefresh} disabled={!!loading} style={{
-            padding:"6px 12px", borderRadius:8, border:"1px solid #334155",
-            background:"#1e293b", color:"#e2e8f0", cursor:"pointer", fontSize:13, opacity: loading ? 0.7 : 1
-          }}>
+          <button
+            onClick={onRefresh}
+            disabled={!!loading}
+            style={{
+              padding: "6px 12px",
+              borderRadius: 8,
+              border: "1px solid #d1d5db",
+              background: "#f3f4f6",
+              color: "#111827",
+              cursor: "pointer",
+              fontSize: 13,
+              opacity: loading ? 0.7 : 1,
+            }}
+          >
             {loading ? "Refreshing…" : "Refresh"}
           </button>
         )}
@@ -165,11 +231,31 @@ function Card({ title, children, onRefresh, loading, style }:{
   );
 }
 
-function Row({ label, value }:{ label:string; value:string }) {
+function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ display:"grid", gridTemplateColumns:"180px 1fr", gap:8, alignItems:"center", margin:"6px 0" }}>
-      <div style={{ color:"#93c5fd", fontSize:13 }}>{label}</div>
-      <code style={{ background:"#0f172a", border:"1px solid #334155", borderRadius:6, padding:"6px 8px", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }} title={value}>
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "180px 1fr",
+        gap: 8,
+        alignItems: "center",
+        margin: "6px 0",
+      }}
+    >
+      <div style={{ color: "#6b7280", fontSize: 13 }}>{label}</div>
+      <code
+        style={{
+          background: "#f3f4f6",
+          border: "1px solid #e5e7eb",
+          borderRadius: 6,
+          padding: "6px 8px",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          color: "#111827",
+        }}
+        title={value}
+      >
         {value}
       </code>
     </div>
