@@ -1,0 +1,8 @@
+{
+  "version": 3,
+  "file": "index.cjs",
+  "sourceRoot": "../../../../../../",
+  "sources": ["boilerplate/contract/src/counter.compact"],
+  "names": [],
+  "mappings": ";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;EAAA;;;;;;;;;;MAQA,AAAA,SAEC;;;;;;;;;;;;;;;;;;;;;;OAAA;;;GAAC;EAVF;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;IAKA;;;;;;;;;uDAA6B;;;;;;;GAK3B;EAFF,AAAA,YAEC;UADC,KAAK;IAAL;;;;;;;;;;2EAAA,KAAK;;;;sDAAA;;GACN;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;IALD;qCAAA;;;;;;;;;;;wFAA6B;KAAA;;;;;;;;;;;;;;"
+}

@@ -1,0 +1,14 @@
+{"level":30,"time":1763347346996,"pid":84863,"hostname":"Hans-Mac-mini.local","msg":"Analyzed contract: Counter Contract"}
+{"level":30,"time":1763347346998,"pid":84863,"hostname":"Hans-Mac-mini.local","msg":"Found 1 functions"}
+{"level":30,"time":1763347346998,"pid":84863,"hostname":"Hans-Mac-mini.local","msg":"🎯 Enhanced CLI initialized with dynamic contract analysis"}
+{"level":30,"time":1763347346999,"pid":84863,"hostname":"Hans-Mac-mini.local","msg":"✅ Using wallet seed from environment variable"}
+{"level":30,"time":1763347346999,"pid":84863,"hostname":"Hans-Mac-mini.local","msg":"File path for save file not found, building wallet from scratch"}
+{"level":30,"time":1763347347051,"pid":84863,"hostname":"Hans-Mac-mini.local","msg":"Your wallet seed is: 34303c5dd0a370f1e3341fb988f976d020b67b0f719503c1905d5b010c372b3f"}
+{"level":30,"time":1763347347051,"pid":84863,"hostname":"Hans-Mac-mini.local","msg":"Your wallet address is: mn_shield-addr_test1jlwwrntwyk0pqt20sxqv4aj5ul45vx7l3nrlp5dqlkjqsvjw06sqxqzsvxy53rka3sne9j0swq4rph6l904svh9yu549687supzdf7c8hg399237"}
+{"level":30,"time":1763347347051,"pid":84863,"hostname":"Hans-Mac-mini.local","msg":"Your wallet balance is: 0"}
+{"level":30,"time":1763347347051,"pid":84863,"hostname":"Hans-Mac-mini.local","msg":"Waiting to receive tokens..."}
+{"level":30,"time":1763347347055,"pid":84863,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763347359273,"pid":84863,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=1"}
+{"level":30,"time":1763347359274,"pid":84863,"hostname":"Hans-Mac-mini.local","msg":"Your wallet balance is: 1000000000"}
+{"level":30,"time":1763347361593,"pid":84863,"hostname":"Hans-Mac-mini.local","msg":"Deploying counter contract..."}
+{"level":50,"time":1763347361649,"pid":84863,"hostname":"Hans-Mac-mini.local","msg":"CLI error: Failed Proof Server response: url=\"http://127.0.0.1:6300/prove-tx\", code=\"400\", status=\"Bad Request\"\""}

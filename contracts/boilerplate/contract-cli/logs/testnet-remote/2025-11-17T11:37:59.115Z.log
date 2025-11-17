@@ -1,0 +1,36 @@
+{"level":30,"time":1763379486021,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"File path for save file not found, building wallet from scratch"}
+{"level":30,"time":1763379486099,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Your wallet seed is: 66171fd42642a239287371d0e95451ced917517941794756caec5bc600c0e8dd"}
+{"level":30,"time":1763379486099,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Your wallet address is: mn_shield-addr_test1k2ddxqm2ma6wm03zq3cee3gfkjrz3yg0cqzzp3er4rnh3lkcsyxqxqx9rs0pasx8aqlns7svcg5jg3waxuja3h89my8jd0rwtcn20vxmasrs6q2a"}
+{"level":30,"time":1763379486100,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Your wallet balance is: 0"}
+{"level":30,"time":1763379486100,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting to receive tokens..."}
+{"level":30,"time":1763379486102,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763379498437,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763379510268,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763379522334,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763379534371,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763379546313,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763379558293,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763379570265,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763379582295,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763379594266,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763379606263,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763379618262,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763379630266,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763379642264,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763379654285,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763379666260,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763379678156,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763379690156,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763379702249,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763379714259,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763379726153,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763379738182,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763379750225,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763379762185,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763379774186,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763379786148,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763379798149,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763379810235,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763379822183,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763379834191,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763379846144,"pid":16716,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
