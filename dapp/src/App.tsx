@@ -1,3 +1,4 @@
+// src/App.tsx
 import React, { useEffect, useRef, useState } from "react";
 import Navbar from "./components/Navbar";
 import { getMidnightProvider } from "./midnight-provider";
@@ -130,6 +131,11 @@ export default function App() {
   // Patient view state
   const [patientRecords, setPatientRecords] = useState<MedicalRecord[] | null>(null);
   const [patientStatus, setPatientStatus] = useState<string | null>(null);
+
+  // Patient consent / sharing state
+  const [doctorToAuthorize, setDoctorToAuthorize] = useState<string>("");
+  const [consentStatus, setConsentStatus] = useState<string | null>(null);
+  const [shareToken, setShareToken] = useState<string | null>(null);
 
   const readState = async (src: any) => {
     if (!src) return null;
@@ -299,33 +305,129 @@ export default function App() {
     }
   };
 
-  // --- QR metadata payload (for patient view) ---
-  const shareUrl =
-    shieldAddr && shieldAddr !== "—"
-      ? `http://localhost:4000/api/records/${encodeURIComponent(shieldAddr)}`
-      : "";
+  // --- Sign consent & get share token (patient → doctor) ---
+  const handleSignConsentForDoctor = async () => {
+    setConsentStatus(null);
+    setShareToken(null);
 
-const qrPayload = JSON.stringify({
-  type: "myMedical_v1",
-  records: (patientRecords ?? []).map((r) => ({
-    visitDate: r.visitDate,
-    diagnosis: r.diagnosis,
-    prescription: r.prescription,
-    notes: r.notes,
-    doctorShieldAddr: r.doctorShieldAddr,
-    createdAt: r.createdAt,
-  })),
-});
+    if (!shieldAddr || shieldAddr === "—") {
+      setConsentStatus("❗ Connect your Midnight wallet first.");
+      return;
+    }
+    if (!doctorToAuthorize.trim()) {
+      setConsentStatus("❗ Enter the doctor's shield address to authorize.");
+      return;
+    }
 
-// For UI only (not encoded): show a quick summary of the latest record
-const firstRecord = (patientRecords && patientRecords[0]) || null;
+    try {
+      // 1) Build consent payload
+      const expiryIso = new Date(
+        Date.now() + 7 * 24 * 3600_000 // 7 days
+      ).toISOString();
+      const nonce =
+        (window as any).crypto?.randomUUID?.() ?? String(Date.now());
+
+      const messagePayload = {
+        type: "MEDICAL_RECORD_VIEW_CONSENT",
+        patientShieldAddr: shieldAddr,
+        doctorShieldAddr: doctorToAuthorize.trim(),
+        expiry: expiryIso,
+        nonce,
+      };
+      const message = JSON.stringify(messagePayload);
+
+      // 2) Get provider/api
+      const provider = getMidnightProvider();
+      const api: any = apiRef.current ?? provider ?? (window as any).cardano?.midnight;
+
+      if (!api) {
+        setConsentStatus("❌ No Midnight provider available to sign.");
+        return;
+      }
+
+      // 3) Try wallet signing (pseudocode – depends on Lace Midnight API)
+      let sig: any = null;
+
+      if (typeof api.signData === "function") {
+        sig = await api.signData({
+          address: shieldAddr,
+          payload: message,
+        });
+      } else if (typeof api.signMessage === "function") {
+        sig = await api.signMessage(message);
+      } else if (api.experimental?.signMessage) {
+        sig = await api.experimental.signMessage({ message });
+      } else {
+        console.error("No signing method found on Midnight provider", api);
+        setConsentStatus("❌ Signing not supported by this wallet build.");
+        return;
+      }
+
+      console.log("Signature result:", sig);
+
+      // 4) Send to backend for verification & share token creation
+      const res = await fetch("http://localhost:4000/api/records/consent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          patientShieldAddr: shieldAddr,
+          doctorShieldAddr: doctorToAuthorize.trim(),
+          message: messagePayload,
+          signature: sig,
+        }),
+      });
+
+      if (!res.ok) {
+        const txt = await res.text();
+        console.error("Consent backend error:", txt);
+        setConsentStatus("❌ Failed to create share link (backend error).");
+        return;
+      }
+
+      const data = await res.json();
+      console.log("Share token response:", data);
+
+      setShareToken(data.shareToken);
+      setConsentStatus("✅ Consent signed and share QR generated.");
+    } catch (err) {
+      console.error(err);
+      setConsentStatus("❌ Failed to sign consent or contact backend.");
+    }
+  };
+
+  // --- QR payload logic ---
+
+  // If shareToken exists: QR encodes only the token (no URL, no shield address)
+  // Otherwise: fallback demo QR with inline record data
+  const qrPayload = shareToken
+    ? JSON.stringify({
+        type: "myMedical_share_v1",
+        shareToken,
+      })
+    : JSON.stringify({
+        type: "myMedical_v1_demo",
+        records: (patientRecords ?? []).map((r) => ({
+          visitDate: r.visitDate,
+          diagnosis: r.diagnosis,
+          prescription: r.prescription,
+          notes: r.notes,
+          doctorShieldAddr: r.doctorShieldAddr,
+          createdAt: r.createdAt,
+        })),
+      });
+
+  // For UI only: quick summary of the latest record
+  const latestRecord =
+    patientRecords && patientRecords.length > 0
+      ? patientRecords[patientRecords.length - 1]
+      : null;
 
   return (
     <div style={{ minHeight: "100vh", background: "#f9fafb" }}>
       <Navbar />
       <main style={{ paddingTop: "5rem", paddingBottom: "3rem", textAlign: "center" }}>
         <h1 style={{ fontSize: "2.25rem", marginBottom: "0.5rem", color: "#0f172a" }}>
-          Welcome to my_Medical
+          Welcome to zkMedical
         </h1>
         <p style={{ color: "#475569", marginBottom: "1.5rem" }}>
           Secure healthcare access with your Midnight Lace wallet.
@@ -500,7 +602,7 @@ const firstRecord = (patientRecords && patientRecords[0]) || null;
           </Card>
         )}
 
-        {/* Patient – QR + records */}
+        {/* Patient – QR + records + signed consent */}
         {role === "patient" && (
           <Card title="Patient: Share & View My Medical Records" style={{ marginTop: 16 }}>
             <div style={{ fontSize: 13, color: "#475569", marginBottom: 8 }}>
@@ -525,72 +627,159 @@ const firstRecord = (patientRecords && patientRecords[0]) || null;
               </div>
             </div>
 
-            {/* QR + metadata preview */}
-{/* QR + metadata preview */}
-<div
-  style={{
-    display: "flex",
-    flexWrap: "wrap",
-    gap: 16,
-    alignItems: "flex-start",
-    marginBottom: 16,
-  }}
->
-  <div style={{ textAlign: "center" }}>
-    <p style={{ fontSize: 13, marginBottom: 8, color: "#0f172a" }}>
-      Show this QR code to a doctor or service.
-    </p>
-    <div
-      style={{
-        background: "#ffffff",
-        padding: 8,
-        borderRadius: 12,
-        border: "1px solid #e2e8f0",
-        display: "inline-block",
-      }}
-    >
-      <QRCode value={qrPayload} size={180} includeMargin />
-    </div>
-    <p style={{ fontSize: 11, marginTop: 6, color: "#64748b" }}>
-      Encodes only your medical record history (no wallet or backend URL).
-    </p>
-  </div>
+            {/* Consent: choose doctor + sign */}
+            <div
+              style={{
+                marginBottom: 12,
+                padding: 10,
+                borderRadius: 10,
+                background: "#f8fafc",
+                border: "1px solid #e2e8f0",
+                textAlign: "left",
+                fontSize: 13,
+              }}
+            >
+              <div style={{ marginBottom: 6, color: "#0f172a", fontWeight: 600 }}>
+                Grant view consent to a doctor
+              </div>
+              <label style={{ display: "block", marginBottom: 8 }}>
+                <span style={{ display: "inline-block", marginBottom: 4 }}>
+                  Doctor shield address
+                </span>
+                <input
+                  type="text"
+                  value={doctorToAuthorize}
+                  onChange={(e) => {
+                    setDoctorToAuthorize(e.target.value);
+                    setConsentStatus(null);
+                    setShareToken(null);
+                  }}
+                  placeholder="mn_shield-addr_test1doctor..."
+                  style={{
+                    ...inputStyle,
+                    fontSize: 12,
+                  }}
+                />
+              </label>
+              <button
+                type="button"
+                onClick={handleSignConsentForDoctor}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: 999,
+                  border: "none",
+                  background: "#0f172a",
+                  color: "#ffffff",
+                  fontWeight: 600,
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                Sign consent & generate QR
+              </button>
+              {consentStatus && (
+                <p
+                  style={{
+                    marginTop: 6,
+                    fontSize: 12,
+                    color: consentStatus.startsWith("✅") ? "#16a34a" : "#b91c1c",
+                  }}
+                >
+                  {consentStatus}
+                </p>
+              )}
+            </div>
 
-  <div
-    style={{
-      flex: 1,
-      minWidth: 220,
-      fontSize: 12,
-      background: "#f8fafc",
-      borderRadius: 10,
-      border: "1px dashed #cbd5e1",
-      padding: 10,
-    }}
-  >
-    <div style={{ fontWeight: 600, marginBottom: 4, color: "#0f172a" }}>
-      QR metadata preview
-    </div>
-    <div style={{ marginBottom: 4 }}>
-      <strong>Records encoded:</strong>{" "}
-      {patientRecords ? patientRecords.length : 0}
-    </div>
-    {firstRecord ? (
-      <>
-        <div style={{ marginTop: 6 }}>
-          <strong>Latest record (summary):</strong>
-        </div>
-        <div>Date: {firstRecord.visitDate}</div>
-        {firstRecord.diagnosis && <div>Diagnosis: {firstRecord.diagnosis}</div>}
-        {firstRecord.prescription && <div>Rx: {firstRecord.prescription}</div>}
-        {firstRecord.notes && <div>Notes: {firstRecord.notes}</div>}
-      </>
-    ) : (
-      <div style={{ marginTop: 6, color: "#64748b" }}>
-        No records yet — QR will be mostly empty until a doctor adds data.
-      </div>
-    )}
-  </div>
-</div>
+            {/* QR + metadata preview */}
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 16,
+                alignItems: "flex-start",
+                marginBottom: 16,
+              }}
+            >
+              <div style={{ textAlign: "center" }}>
+                <p style={{ fontSize: 13, marginBottom: 8, color: "#0f172a" }}>
+                  Show this QR code to the authorized doctor or service.
+                </p>
+                <div
+                  style={{
+                    background: "#ffffff",
+                    padding: 8,
+                    borderRadius: 12,
+                    border: "1px solid #e2e8f0",
+                    display: "inline-block",
+                  }}
+                >
+                  <QRCode value={qrPayload} size={180} includeMargin />
+                </div>
+                <p style={{ fontSize: 11, marginTop: 6, color: "#64748b" }}>
+                  Encodes a signed consent token (no wallet address, no backend URL).
+                </p>
+                {shareToken && (
+                  <p
+                    style={{
+                      fontSize: 11,
+                      marginTop: 4,
+                      color: "#94a3b8",
+                      wordBreak: "break-all",
+                    }}
+                  >
+                    Token: {shareToken.slice(0, 12)}… (short-lived)
+                  </p>
+                )}
+              </div>
+
+              <div
+                style={{
+                  flex: 1,
+                  minWidth: 220,
+                  fontSize: 12,
+                  background: "#f8fafc",
+                  borderRadius: 10,
+                  border: "1px dashed #cbd5e1",
+                  padding: 10,
+                }}
+              >
+                <div style={{ fontWeight: 600, marginBottom: 4, color: "#0f172a" }}>
+                  QR metadata preview
+                </div>
+                <div style={{ marginBottom: 4 }}>
+                  <strong>Records loaded locally:</strong>{" "}
+                  {patientRecords ? patientRecords.length : 0}
+                </div>
+                {latestRecord ? (
+                  <>
+                    <div style={{ marginTop: 6 }}>
+                      <strong>Latest record (summary):</strong>
+                    </div>
+                    <div>Date: {latestRecord.visitDate}</div>
+                    {latestRecord.diagnosis && (
+                      <div>Diagnosis: {latestRecord.diagnosis}</div>
+                    )}
+                    {latestRecord.prescription && (
+                      <div>Rx: {latestRecord.prescription}</div>
+                    )}
+                    {latestRecord.notes && <div>Notes: {latestRecord.notes}</div>}
+                  </>
+                ) : (
+                  <div style={{ marginTop: 6, color: "#64748b" }}>
+                    No records yet — once a doctor adds data and you fetch it, the QR
+                    becomes meaningful.
+                  </div>
+                )}
+                {!shareToken && (
+                  <div style={{ marginTop: 8, color: "#64748b" }}>
+                    <em>
+                      Tip: sign consent to generate a tokenized QR instead of embedding
+                      full data.
+                    </em>
+                  </div>
+                )}
+              </div>
+            </div>
 
             <div style={{ fontSize: 13, marginBottom: 6, color: "#0f172a" }}>
               Your Records

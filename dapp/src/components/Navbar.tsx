@@ -55,7 +55,7 @@ export default function Navbar() {
           style={{ height: "42px", borderRadius: "6px" }}
         />
         <span style={{ fontSize: "1.25rem", fontWeight: 600 }}>
-          Midnight my_Medical
+          Midnight immutableMedical
         </span>
       </div>
 

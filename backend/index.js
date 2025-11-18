@@ -106,7 +106,51 @@ app.get("/api/records/:patientShieldAddr", (req, res) => {
   const records = recordsByPatient[patientShieldAddr] ?? [];
   return res.json({ ok: true, patientShieldAddr, count: records.length, records });
 });
+// backend/index.js (or .ts)
 
+app.post("/api/records/consent", async (req, res) => {
+  const { patientShieldAddr, doctorShieldAddr, message, signature } = req.body ?? {};
+  if (!patientShieldAddr || !doctorShieldAddr || !message || !signature) {
+    return res.status(400).json({ ok: false, error: "missing_fields" });
+  }
+
+  // TODO: verify the signature using Midnight’s verification lib or public key
+  // This usually needs:
+  //  - recover the public key from signature + message
+  //  - check that it corresponds to patientShieldAddr
+
+  const isValid = true; // <— replace with real verification
+  if (!isValid) {
+    return res.status(400).json({ ok: false, error: "invalid_signature" });
+  }
+
+  // If valid, create a short share token
+  const shareToken = crypto.randomUUID(); // or shorter hash/token
+
+  // Store in some in-memory or DB consent map
+  consents[shareToken] = {
+    patientShieldAddr,
+    doctorShieldAddr,
+    message,
+    signature,
+  };
+
+  return res.json({ ok: true, shareToken });
+});
+
+// Doctor / viewer uses this share URL
+app.get("/api/records/share/:token", (req, res) => {
+  const token = req.params.token;
+  const consent = consents[token];
+  if (!consent) {
+    return res.status(404).json({ ok: false, error: "invalid_token" });
+  }
+
+  // Optional: check consent.message.expiry and that it's still valid
+
+  const records = recordsByPatient[consent.patientShieldAddr] ?? [];
+  return res.json({ ok: true, patientShieldAddr: consent.patientShieldAddr, records });
+});
 app.listen(PORT, () => {
   console.log(`✅ Backend listening on http://localhost:${PORT}`);
 });
