@@ -1,12 +1,12 @@
 import { contracts, witnesses } from '@midnight-ntwrk/contract';
-import { nativeToken, Transaction } from '@midnight-ntwrk/ledger';
-import { deployContract, findDeployedContract } from '@midnight-ntwrk/midnight-js-contracts';
+import { nativeToken, Transaction, } from '@midnight-ntwrk/ledger';
+import { deployContract, findDeployedContract, } from '@midnight-ntwrk/midnight-js-contracts';
 import { httpClientProofProvider } from '@midnight-ntwrk/midnight-js-http-client-proof-provider';
 import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
 import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
 import { NodeZkConfigProvider } from '@midnight-ntwrk/midnight-js-node-zk-config-provider';
-import { assertIsContractAddress, toHex } from '@midnight-ntwrk/midnight-js-utils';
-import { getLedgerNetworkId, getZswapNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
+import { assertIsContractAddress, toHex, } from '@midnight-ntwrk/midnight-js-utils';
+import { getLedgerNetworkId, getZswapNetworkId, } from '@midnight-ntwrk/midnight-js-network-id';
 import { createBalancedTx, } from '@midnight-ntwrk/midnight-js-types';
 import { WalletBuilder } from '@midnight-ntwrk/wallet';
 import { Transaction as ZswapTransaction } from '@midnight-ntwrk/zswap';
@@ -16,6 +16,7 @@ import { WebSocket } from 'ws';
 import * as fsAsync from 'node:fs/promises';
 import * as fs from 'node:fs';
 import { ContractAnalyzer } from './contract-analyzer.js';
+import { CounterPrivateStateId, } from './common-types';
 import { contractConfig } from './config';
 // Get the dynamic contract module
 const getContractModule = () => {
@@ -26,28 +27,31 @@ const getContractModule = () => {
     return contracts[contractNames[0]];
 };
 const contractModule = getContractModule();
+// Needed so ws-based stuff works in Node
+// @ts-expect-error: It's needed to enable WebSocket usage through apollo
+globalThis.WebSocket = WebSocket;
 let logger;
 /**
  * Create an opaque string value from a plain string
  * This is needed for Opaque<"string"> parameters in Midnight contracts
  */
 export const createOpaqueString = (value) => {
-    // In Midnight, opaque strings need to be properly encoded as Uint8Array
-    // The contract expects the raw string bytes, not a complex object
     const encoder = new TextEncoder();
     return encoder.encode(value);
 };
-// Instead of setting globalThis.crypto which is read-only, we'll ensure crypto is available
-// but won't try to overwrite the global property
-// @ts-expect-error: It's needed to enable WebSocket usage through apollo
-globalThis.WebSocket = WebSocket;
+/**
+ * Read the ledger state from the contract.
+ * For medical_records.compact this includes latest_record_hash: Field
+ */
 export const getCounterLedgerState = async (providers, contractAddress) => {
     assertIsContractAddress(contractAddress);
     logger.info('Checking contract ledger state...');
     const state = await providers.publicDataProvider
         .queryContractState(contractAddress)
-        .then((contractState) => (contractState != null ? contractModule.ledger(contractState.data).round : null));
-    logger.info(`Ledger state: ${state}`);
+        .then((contractState) => contractState != null
+        ? contractModule.ledger(contractState.data)
+        : null);
+    logger.info(`Ledger state: ${JSON.stringify(state)}`);
     return state;
 };
 export const counterContractInstance = new contractModule.Contract(witnesses);
@@ -55,35 +59,44 @@ export const joinContract = async (providers, contractAddress) => {
     const counterContract = await findDeployedContract(providers, {
         contractAddress,
         contract: counterContractInstance,
-        privateStateId: 'counterPrivateState',
-        initialPrivateState: { privateCounter: 0 },
+        privateStateId: CounterPrivateStateId,
+        // For medical_records we don’t use private state; just pass empty
+        initialPrivateState: {},
     });
     logger.info(`Joined contract at address: ${counterContract.deployTxData.public.contractAddress}`);
     return counterContract;
 };
 export const deploy = async (providers, privateState) => {
-    // Get dynamic contract name
+    // Dynamic name just for logging; works for medical_records too
     const analyzer = new ContractAnalyzer();
     const analysis = await analyzer.analyzeContract();
     logger.info(`Deploying ${analysis.contractName.toLowerCase()}...`);
     const counterContract = await deployContract(providers, {
         contract: counterContractInstance,
-        privateStateId: 'counterPrivateState',
+        privateStateId: CounterPrivateStateId,
         initialPrivateState: privateState,
     });
     logger.info(`Deployed contract at address: ${counterContract.deployTxData.public.contractAddress}`);
     return counterContract;
 };
+/**
+ * Legacy helper: now prints latest_record_hash if present
+ */
 export const displayCounterValue = async (providers, counterContract) => {
     const contractAddress = counterContract.deployTxData.public.contractAddress;
-    const counterValue = await getCounterLedgerState(providers, contractAddress);
-    if (counterValue === null) {
-        logger.info(`There is no counter contract deployed at ${contractAddress}.`);
+    const ledgerState = await getCounterLedgerState(providers, contractAddress);
+    let value = null;
+    if (ledgerState &&
+        typeof ledgerState.latest_record_hash === 'bigint') {
+        value = ledgerState.latest_record_hash;
+    }
+    if (value === null) {
+        logger.info(`There is no ledger value available at ${contractAddress}.`);
     }
     else {
-        logger.info(`Current counter value: ${Number(counterValue)}`);
+        logger.info(`Current latest_record_hash: ${value.toString()}`);
     }
-    return { contractAddress, counterValue };
+    return { contractAddress, counterValue: value };
 };
 export const createWalletAndMidnightProvider = async (wallet) => {
     const state = await Rx.firstValueFrom(wallet.state());
@@ -108,7 +121,7 @@ export const waitForSync = (wallet) => Rx.firstValueFrom(wallet.state().pipe(Rx.
     logger.info(`Waiting for funds. Backend lag: ${sourceGap}, wallet lag: ${applyGap}, transactions=${state.transactionHistory.length}`);
 }), Rx.filter((state) => {
     // Let's allow progress only if wallet is synced fully
-    return state.syncProgress !== undefined && state.syncProgress.synced;
+    return (state.syncProgress !== undefined && state.syncProgress.synced);
 })));
 export const waitForSyncProgress = async (wallet) => await Rx.firstValueFrom(wallet.state().pipe(Rx.throttleTime(5_000), Rx.tap((state) => {
     const applyGap = state.syncProgress?.lag.applyGap ?? 0n;
@@ -213,6 +226,7 @@ export const configureProviders = async (wallet, config) => {
             privateStateStoreName: contractConfig.privateStateStoreName,
         }),
         publicDataProvider: indexerPublicDataProvider(config.indexer, config.indexerWS),
+        // Generic type 'increment' was for the old counter; use string here
         zkConfigProvider: new NodeZkConfigProvider(contractConfig.zkConfigPath),
         proofProvider: httpClientProofProvider(config.proofServer),
         walletProvider: walletAndMidnightProvider,
@@ -225,7 +239,9 @@ export function setLogger(_logger) {
 export const streamToString = async (stream) => {
     const chunks = [];
     return await new Promise((resolve, reject) => {
-        stream.on('data', (chunk) => chunks.push(typeof chunk === 'string' ? Buffer.from(chunk, 'utf8') : chunk));
+        stream.on('data', (chunk) => chunks.push(typeof chunk === 'string'
+            ? Buffer.from(chunk, 'utf8')
+            : chunk));
         stream.on('error', (err) => {
             reject(err);
         });
@@ -285,15 +301,14 @@ export const getItemsSet = async (providers, contractAddress) => {
         if (contractState?.data) {
             const ledgerData = contractModule.ledger(contractState.data);
             if (ledgerData.items) {
-                // Convert Set to Array and then to string representations
                 const itemsArray = Array.from(ledgerData.items);
                 logger.info(`Found ${itemsArray.length} items in set`);
-                return itemsArray.map(item => {
+                return itemsArray.map((item) => {
                     if (item instanceof Uint8Array) {
-                        // Convert bytes to hex string
-                        return '0x' + Array.from(item)
-                            .map(b => b.toString(16).padStart(2, '0'))
-                            .join('');
+                        return ('0x' +
+                            Array.from(item)
+                                .map((b) => b.toString(16).padStart(2, '0'))
+                                .join(''));
                     }
                     return String(item);
                 });

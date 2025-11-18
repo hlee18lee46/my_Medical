@@ -39,16 +39,16 @@ export declare class EnhancedContractAPI {
     generateMenuItems(): any[];
     generateMenuQuestion(menuItems: any[]): string;
     /**
-     * Execute increment function
+     * Execute update_record function
      */
-    increment(...args: any[]): Promise<any>;
+    update_record(...args: any[]): Promise<any>;
 }
 export declare const CONTRACT_METADATA: {
-    readonly name: "Counter Contract";
-    readonly fileName: "counter.compact";
-    readonly generatedAt: "2025-11-17T00:34:21.911Z";
+    readonly name: "Medical_records Contract";
+    readonly fileName: "medical_records.compact";
+    readonly generatedAt: "2025-11-17T22:55:58.002Z";
     readonly functions: readonly [{
-        readonly name: "increment";
+        readonly name: "update_record";
         readonly parameters: readonly [];
         readonly returnType: "[]";
         readonly readOnly: false;

@@ -1,0 +1,16 @@
+{"level":30,"time":1763420906962,"pid":80391,"hostname":"Hans-Mac-mini.local","msg":"✅ Using wallet seed from environment variable"}
+{"level":30,"time":1763420906967,"pid":80391,"hostname":"Hans-Mac-mini.local","msg":"File path for save file not found, building wallet from scratch"}
+{"level":30,"time":1763420907047,"pid":80391,"hostname":"Hans-Mac-mini.local","msg":"Your wallet seed is: c88f0466a7d176768b3935c6276cf3242b02925fbffb2c5377946d40124cecd3"}
+{"level":30,"time":1763420907047,"pid":80391,"hostname":"Hans-Mac-mini.local","msg":"Your wallet address is: mn_shield-addr_test1lwrcksvclrc2gkznenlnrsr9p2fnmewh0at7xfrl9smeylsjc4dqxqya5fqmn8xd5ecm8ddj0dpu66qafpegdpuy7uxtfn9scgcfqhlx9qn8kc3z"}
+{"level":30,"time":1763420907047,"pid":80391,"hostname":"Hans-Mac-mini.local","msg":"Your wallet balance is: 0"}
+{"level":30,"time":1763420907047,"pid":80391,"hostname":"Hans-Mac-mini.local","msg":"Waiting to receive tokens..."}
+{"level":30,"time":1763420907053,"pid":80391,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763420919176,"pid":80391,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=1"}
+{"level":30,"time":1763420919177,"pid":80391,"hostname":"Hans-Mac-mini.local","msg":"Your wallet balance is: 200000000"}
+{"level":30,"time":1763420924359,"pid":80391,"hostname":"Hans-Mac-mini.local","msg":"Deploying medical_records contract..."}
+{"level":30,"time":1763420955939,"pid":80391,"hostname":"Hans-Mac-mini.local","msg":"Deployed contract at address: 020033ef3685d40022b445f126497a6dde8dc2329485d73843fd76028494ee6147bf"}
+{"level":30,"time":1763420955941,"pid":80391,"hostname":"Hans-Mac-mini.local","msg":"Analyzed contract: Medical_records Contract"}
+{"level":30,"time":1763420955941,"pid":80391,"hostname":"Hans-Mac-mini.local","msg":"Found 1 functions"}
+{"level":30,"time":1763420955942,"pid":80391,"hostname":"Hans-Mac-mini.local","msg":"=== Dynamic Contract CLI ==="}
+{"level":30,"time":1763420955942,"pid":80391,"hostname":"Hans-Mac-mini.local","msg":"Contract Address: 020033ef3685d40022b445f126497a6dde8dc2329485d73843fd76028494ee6147bf"}
+{"level":30,"time":1763420955942,"pid":80391,"hostname":"Hans-Mac-mini.local","msg":"Available functions have been automatically detected from your contract!"}

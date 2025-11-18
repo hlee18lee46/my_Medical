@@ -1,13 +1,28 @@
 import { type ContractAddress } from '@midnight-ntwrk/compact-runtime';
 import { contracts, witnesses } from '@midnight-ntwrk/contract';
-import { type CoinInfo, nativeToken, Transaction, type TransactionId } from '@midnight-ntwrk/ledger';
-import { deployContract, findDeployedContract } from '@midnight-ntwrk/midnight-js-contracts';
+
+import {
+  type CoinInfo,
+  nativeToken,
+  Transaction,
+  type TransactionId,
+} from '@midnight-ntwrk/ledger';
+import {
+  deployContract,
+  findDeployedContract,
+} from '@midnight-ntwrk/midnight-js-contracts';
 import { httpClientProofProvider } from '@midnight-ntwrk/midnight-js-http-client-proof-provider';
 import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
 import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
 import { NodeZkConfigProvider } from '@midnight-ntwrk/midnight-js-node-zk-config-provider';
-import { assertIsContractAddress, toHex } from '@midnight-ntwrk/midnight-js-utils';
-import { getLedgerNetworkId, getZswapNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
+import {
+  assertIsContractAddress,
+  toHex,
+} from '@midnight-ntwrk/midnight-js-utils';
+import {
+  getLedgerNetworkId,
+  getZswapNetworkId,
+} from '@midnight-ntwrk/midnight-js-network-id';
 import {
   type BalancedTransaction,
   createBalancedTx,
@@ -29,11 +44,12 @@ import { ContractAnalyzer } from './contract-analyzer.js';
 import {
   type CounterContract,
   type CounterPrivateState,
-  type CounterPrivateStateId,
+  CounterPrivateStateId,
   type CounterProviders,
   type DeployedCounterContract,
 } from './common-types';
 import { type Config, contractConfig } from './config';
+
 
 // Get the dynamic contract module
 const getContractModule = () => {
@@ -45,6 +61,9 @@ const getContractModule = () => {
 };
 
 const contractModule = getContractModule();
+// Needed so ws-based stuff works in Node
+// @ts-expect-error: It's needed to enable WebSocket usage through apollo
+globalThis.WebSocket = WebSocket;
 
 let logger: Logger;
 
@@ -53,46 +72,48 @@ let logger: Logger;
  * This is needed for Opaque<"string"> parameters in Midnight contracts
  */
 export const createOpaqueString = (value: string): any => {
-  // In Midnight, opaque strings need to be properly encoded as Uint8Array
-  // The contract expects the raw string bytes, not a complex object
   const encoder = new TextEncoder();
   return encoder.encode(value);
 };
 
-// Instead of setting globalThis.crypto which is read-only, we'll ensure crypto is available
-// but won't try to overwrite the global property
-// @ts-expect-error: It's needed to enable WebSocket usage through apollo
-globalThis.WebSocket = WebSocket;
-
+/**
+ * Read the ledger state from the contract.
+ * For medical_records.compact this includes latest_record_hash: Field
+ */
 export const getCounterLedgerState = async (
   providers: CounterProviders,
   contractAddress: ContractAddress,
-): Promise<bigint | null> => {
+): Promise<any> => {
   assertIsContractAddress(contractAddress);
   logger.info('Checking contract ledger state...');
   const state = await providers.publicDataProvider
     .queryContractState(contractAddress)
-    .then((contractState) => (contractState != null ? contractModule.ledger(contractState.data).round : null))
-  logger.info(`Ledger state: ${state}`);
+    .then((contractState: any) =>
+      contractState != null
+        ? contractModule.ledger(contractState.data)
+        : null,
+    );
+  logger.info(`Ledger state: ${JSON.stringify(state)}`);
   return state;
 };
 
-
-
-
-export const counterContractInstance: CounterContract = new contractModule.Contract(witnesses);
+export const counterContractInstance: CounterContract =
+  new contractModule.Contract(witnesses);
 
 export const joinContract = async (
   providers: CounterProviders,
   contractAddress: string,
 ): Promise<DeployedCounterContract> => {
-  const counterContract = await findDeployedContract(providers, {
+  const counterContract = await findDeployedContract(providers as any, {
     contractAddress,
     contract: counterContractInstance,
-    privateStateId: 'counterPrivateState',
-    initialPrivateState: { privateCounter: 0 },
+    privateStateId: CounterPrivateStateId,
+    // For medical_records we don’t use private state; just pass empty
+    initialPrivateState: {} as CounterPrivateState,
   });
-  logger.info(`Joined contract at address: ${counterContract.deployTxData.public.contractAddress}`);
+  logger.info(
+    `Joined contract at address: ${counterContract.deployTxData.public.contractAddress}`,
+  );
   return counterContract;
 };
 
@@ -100,51 +121,82 @@ export const deploy = async (
   providers: CounterProviders,
   privateState: CounterPrivateState,
 ): Promise<DeployedCounterContract> => {
-  // Get dynamic contract name
+  // Dynamic name just for logging; works for medical_records too
   const analyzer = new ContractAnalyzer();
   const analysis = await analyzer.analyzeContract();
-  
+
   logger.info(`Deploying ${analysis.contractName.toLowerCase()}...`);
-  const counterContract = await deployContract(providers, {
+  const counterContract = await deployContract(providers as any, {
     contract: counterContractInstance,
-    privateStateId: 'counterPrivateState',
+    privateStateId: CounterPrivateStateId,
     initialPrivateState: privateState,
   });
-  logger.info(`Deployed contract at address: ${counterContract.deployTxData.public.contractAddress}`);
+  logger.info(
+    `Deployed contract at address: ${counterContract.deployTxData.public.contractAddress}`,
+  );
   return counterContract;
 };
 
-
-
+/**
+ * Legacy helper: now prints latest_record_hash if present
+ */
 export const displayCounterValue = async (
   providers: CounterProviders,
   counterContract: DeployedCounterContract,
 ): Promise<{ counterValue: bigint | null; contractAddress: string }> => {
   const contractAddress = counterContract.deployTxData.public.contractAddress;
-  const counterValue = await getCounterLedgerState(providers, contractAddress);
-  if (counterValue === null) {
-    logger.info(`There is no counter contract deployed at ${contractAddress}.`);
-  } else {
-    logger.info(`Current counter value: ${Number(counterValue)}`);
+  const ledgerState: any = await getCounterLedgerState(
+    providers,
+    contractAddress,
+  );
+
+  let value: bigint | null = null;
+  if (
+    ledgerState &&
+    typeof ledgerState.latest_record_hash === 'bigint'
+  ) {
+    value = ledgerState.latest_record_hash;
   }
-  return { contractAddress, counterValue };
+
+  if (value === null) {
+    logger.info(
+      `There is no ledger value available at ${contractAddress}.`,
+    );
+  } else {
+    logger.info(
+      `Current latest_record_hash: ${value.toString()}`,
+    );
+  }
+
+  return { contractAddress, counterValue: value };
 };
 
-
-
-export const createWalletAndMidnightProvider = async (wallet: Wallet): Promise<WalletProvider & MidnightProvider> => {
+export const createWalletAndMidnightProvider = async (
+  wallet: Wallet,
+): Promise<WalletProvider & MidnightProvider> => {
   const state = await Rx.firstValueFrom(wallet.state());
   return {
     coinPublicKey: state.coinPublicKey,
     encryptionPublicKey: state.encryptionPublicKey,
-    balanceTx(tx: UnbalancedTransaction, newCoins: CoinInfo[]): Promise<BalancedTransaction> {
+    balanceTx(
+      tx: UnbalancedTransaction,
+      newCoins: CoinInfo[],
+    ): Promise<BalancedTransaction> {
       return wallet
         .balanceTransaction(
-          ZswapTransaction.deserialize(tx.serialize(getLedgerNetworkId()), getZswapNetworkId()),
+          ZswapTransaction.deserialize(
+            tx.serialize(getLedgerNetworkId()),
+            getZswapNetworkId(),
+          ),
           newCoins,
         )
         .then((tx) => wallet.proveTransaction(tx))
-        .then((zswapTx) => Transaction.deserialize(zswapTx.serialize(getZswapNetworkId()), getLedgerNetworkId()))
+        .then((zswapTx) =>
+          Transaction.deserialize(
+            zswapTx.serialize(getZswapNetworkId()),
+            getLedgerNetworkId(),
+          ),
+        )
         .then(createBalancedTx);
     },
     submitTx(tx: BalancedTransaction): Promise<TransactionId> {
@@ -166,7 +218,9 @@ export const waitForSync = (wallet: Wallet) =>
       }),
       Rx.filter((state) => {
         // Let's allow progress only if wallet is synced fully
-        return state.syncProgress !== undefined && state.syncProgress.synced;
+        return (
+          state.syncProgress !== undefined && state.syncProgress.synced
+        );
       }),
     ),
   );
@@ -218,18 +272,35 @@ export const buildWalletAndWaitForFunds = async (
   let wallet: Wallet & Resource;
   if (directoryPath !== undefined) {
     if (fs.existsSync(`${directoryPath}/${filename}`)) {
-      logger.info(`Attempting to restore state from ${directoryPath}/${filename}`);
+      logger.info(
+        `Attempting to restore state from ${directoryPath}/${filename}`,
+      );
       try {
-        const serializedStream = fs.createReadStream(`${directoryPath}/${filename}`, 'utf-8');
+        const serializedStream = fs.createReadStream(
+          `${directoryPath}/${filename}`,
+          'utf-8',
+        );
         const serialized = await streamToString(serializedStream);
         serializedStream.on('finish', () => {
           serializedStream.close();
         });
-        wallet = await WalletBuilder.restore(indexer, indexerWS, proofServer, node, seed, serialized, 'info');
+        wallet = await WalletBuilder.restore(
+          indexer,
+          indexerWS,
+          proofServer,
+          node,
+          seed,
+          serialized,
+          'info',
+        );
         wallet.start();
         const stateObject = JSON.parse(serialized);
-        if ((await isAnotherChain(wallet, Number(stateObject.offset))) === true) {
-          logger.warn('The chain was reset, building wallet from scratch');
+        if (
+          (await isAnotherChain(wallet, Number(stateObject.offset))) === true
+        ) {
+          logger.warn(
+            'The chain was reset, building wallet from scratch',
+          );
           wallet = await WalletBuilder.buildFromSeed(
             indexer,
             indexerWS,
@@ -247,9 +318,15 @@ export const buildWalletAndWaitForFunds = async (
             logger.info('Wallet was able to sync from restored state');
           } else {
             logger.info(`Offset: ${stateObject.offset}`);
-            logger.info(`SyncProgress.lag.applyGap: ${newState.syncProgress?.lag.applyGap}`);
-            logger.info(`SyncProgress.lag.sourceGap: ${newState.syncProgress?.lag.sourceGap}`);
-            logger.warn('Wallet was not able to sync from restored state, building wallet from scratch');
+            logger.info(
+              `SyncProgress.lag.applyGap: ${newState.syncProgress?.lag.applyGap}`,
+            );
+            logger.info(
+              `SyncProgress.lag.sourceGap: ${newState.syncProgress?.lag.sourceGap}`,
+            );
+            logger.warn(
+              'Wallet was not able to sync from restored state, building wallet from scratch',
+            );
             wallet = await WalletBuilder.buildFromSeed(
               indexer,
               indexerWS,
@@ -270,7 +347,9 @@ export const buildWalletAndWaitForFunds = async (
         } else {
           logger.error(error);
         }
-        logger.warn('Wallet was not able to restore using the stored state, building wallet from scratch');
+        logger.warn(
+          'Wallet was not able to restore using the stored state, building wallet from scratch',
+        );
         wallet = await WalletBuilder.buildFromSeed(
           indexer,
           indexerWS,
@@ -283,7 +362,9 @@ export const buildWalletAndWaitForFunds = async (
         wallet.start();
       }
     } else {
-      logger.info('Wallet save file not found, building wallet from scratch');
+      logger.info(
+        'Wallet save file not found, building wallet from scratch',
+      );
       wallet = await WalletBuilder.buildFromSeed(
         indexer,
         indexerWS,
@@ -296,7 +377,9 @@ export const buildWalletAndWaitForFunds = async (
       wallet.start();
     }
   } else {
-    logger.info('File path for save file not found, building wallet from scratch');
+    logger.info(
+      'File path for save file not found, building wallet from scratch',
+    );
     wallet = await WalletBuilder.buildFromSeed(
       indexer,
       indexerWS,
@@ -328,33 +411,57 @@ export const randomBytes = (length: number): Uint8Array => {
   return bytes;
 };
 
-export const buildFreshWallet = async (config: Config): Promise<Wallet & Resource> =>
-  await buildWalletAndWaitForFunds(config, toHex(randomBytes(32)), '');
+export const buildFreshWallet = async (
+  config: Config,
+): Promise<Wallet & Resource> =>
+  await buildWalletAndWaitForFunds(
+    config,
+    toHex(randomBytes(32)),
+    '',
+  );
 
-export const configureProviders = async (wallet: Wallet & Resource, config: Config) => {
-  const walletAndMidnightProvider = await createWalletAndMidnightProvider(wallet);
+export const configureProviders = async (
+  wallet: Wallet & Resource,
+  config: Config,
+) => {
+  const walletAndMidnightProvider =
+    await createWalletAndMidnightProvider(wallet);
   return {
-    privateStateProvider: levelPrivateStateProvider<typeof CounterPrivateStateId>({
+    privateStateProvider: levelPrivateStateProvider<
+      typeof CounterPrivateStateId
+    >({
       privateStateStoreName: contractConfig.privateStateStoreName,
     }),
-    publicDataProvider: indexerPublicDataProvider(config.indexer, config.indexerWS),
-    zkConfigProvider: new NodeZkConfigProvider<'increment'>(contractConfig.zkConfigPath),
+    publicDataProvider: indexerPublicDataProvider(
+      config.indexer,
+      config.indexerWS,
+    ),
+    // Generic type 'increment' was for the old counter; use string here
+    zkConfigProvider: new NodeZkConfigProvider<'update_record'>(
+      contractConfig.zkConfigPath,
+    ),
     proofProvider: httpClientProofProvider(config.proofServer),
     walletProvider: walletAndMidnightProvider,
     midnightProvider: walletAndMidnightProvider,
   };
 };
 
-
-
 export function setLogger(_logger: Logger) {
   logger = _logger;
 }
 
-export const streamToString = async (stream: fs.ReadStream): Promise<string> => {
+export const streamToString = async (
+  stream: fs.ReadStream,
+): Promise<string> => {
   const chunks: Buffer[] = [];
   return await new Promise((resolve, reject) => {
-    stream.on('data', (chunk) => chunks.push(typeof chunk === 'string' ? Buffer.from(chunk, 'utf8') : chunk));
+    stream.on('data', (chunk) =>
+      chunks.push(
+        typeof chunk === 'string'
+          ? Buffer.from(chunk, 'utf8')
+          : chunk,
+      ),
+    );
     stream.on('error', (err) => {
       reject(err);
     });
@@ -367,12 +474,18 @@ export const streamToString = async (stream: fs.ReadStream): Promise<string> => 
 export const isAnotherChain = async (wallet: Wallet, offset: number) => {
   await waitForSyncProgress(wallet);
   // Here wallet does not expose the offset block it is synced to, that is why this workaround
-  const walletOffset = Number(JSON.parse(await wallet.serializeState()).offset);
+  const walletOffset = Number(
+    JSON.parse(await wallet.serializeState()).offset,
+  );
   if (walletOffset < offset - 1) {
-    logger.info(`Your offset offset is: ${walletOffset} restored offset: ${offset} so it is another chain`);
+    logger.info(
+      `Your offset offset is: ${walletOffset} restored offset: ${offset} so it is another chain`,
+    );
     return true;
   } else {
-    logger.info(`Your offset offset is: ${walletOffset} restored offset: ${offset} ok`);
+    logger.info(
+      `Your offset offset is: ${walletOffset} restored offset: ${offset} ok`,
+    );
     return false;
   }
 };
@@ -384,11 +497,15 @@ export const saveState = async (wallet: Wallet, filename: string) => {
     try {
       await fsAsync.mkdir(directoryPath, { recursive: true });
       const serializedState = await wallet.serializeState();
-      const writer = fs.createWriteStream(`${directoryPath}/${filename}`);
+      const writer = fs.createWriteStream(
+        `${directoryPath}/${filename}`,
+      );
       writer.write(serializedState);
 
       writer.on('finish', function () {
-        logger.info(`File '${directoryPath}/${filename}' written successfully.`);
+        logger.info(
+          `File '${directoryPath}/${filename}' written successfully.`,
+        );
       });
 
       writer.on('error', function (err) {
@@ -403,7 +520,9 @@ export const saveState = async (wallet: Wallet, filename: string) => {
       }
     }
   } else {
-    logger.info('Not saving cache as sync cache was not defined');
+    logger.info(
+      'Not saving cache as sync cache was not defined',
+    );
   }
 };
 
@@ -413,23 +532,27 @@ export const getItemsSet = async (
 ): Promise<string[]> => {
   assertIsContractAddress(contractAddress);
   logger.info('Checking items set...');
-  
+
   try {
-    const contractState = await providers.publicDataProvider.queryContractState(contractAddress);
+    const contractState =
+      await providers.publicDataProvider.queryContractState(
+        contractAddress,
+      );
     if (contractState?.data) {
       const ledgerData = contractModule.ledger(contractState.data);
-      
+
       if (ledgerData.items) {
-        // Convert Set to Array and then to string representations
         const itemsArray = Array.from(ledgerData.items);
         logger.info(`Found ${itemsArray.length} items in set`);
-        
-        return itemsArray.map(item => {
+
+        return itemsArray.map((item) => {
           if (item instanceof Uint8Array) {
-            // Convert bytes to hex string
-            return '0x' + Array.from(item)
-              .map(b => b.toString(16).padStart(2, '0'))
-              .join('');
+            return (
+              '0x' +
+              Array.from(item)
+                .map((b) => b.toString(16).padStart(2, '0'))
+                .join('')
+            );
           }
           return String(item);
         });

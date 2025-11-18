@@ -12,10 +12,17 @@ import { type Config } from './config';
  * This is needed for Opaque<"string"> parameters in Midnight contracts
  */
 export declare const createOpaqueString: (value: string) => any;
-export declare const getCounterLedgerState: (providers: CounterProviders, contractAddress: ContractAddress) => Promise<bigint | null>;
+/**
+ * Read the ledger state from the contract.
+ * For medical_records.compact this includes latest_record_hash: Field
+ */
+export declare const getCounterLedgerState: (providers: CounterProviders, contractAddress: ContractAddress) => Promise<any>;
 export declare const counterContractInstance: CounterContract;
 export declare const joinContract: (providers: CounterProviders, contractAddress: string) => Promise<DeployedCounterContract>;
 export declare const deploy: (providers: CounterProviders, privateState: CounterPrivateState) => Promise<DeployedCounterContract>;
+/**
+ * Legacy helper: now prints latest_record_hash if present
+ */
 export declare const displayCounterValue: (providers: CounterProviders, counterContract: DeployedCounterContract) => Promise<{
     counterValue: bigint | null;
     contractAddress: string;
@@ -30,7 +37,7 @@ export declare const buildFreshWallet: (config: Config) => Promise<Wallet & Reso
 export declare const configureProviders: (wallet: Wallet & Resource, config: Config) => Promise<{
     privateStateProvider: import("@midnight-ntwrk/midnight-js-types").PrivateStateProvider<"counterPrivateState", any>;
     publicDataProvider: import("@midnight-ntwrk/midnight-js-types").PublicDataProvider;
-    zkConfigProvider: NodeZkConfigProvider<"increment">;
+    zkConfigProvider: NodeZkConfigProvider<"update_record">;
     proofProvider: import("@midnight-ntwrk/midnight-js-types").ProofProvider<string>;
     walletProvider: WalletProvider & MidnightProvider;
     midnightProvider: WalletProvider & MidnightProvider;

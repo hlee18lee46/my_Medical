@@ -1,0 +1,13 @@
+pragma language_version 0.17.0;
+
+import CompactStandardLibrary;
+
+// Latest encrypted medical record hash stored on-chain.
+// (We keep only 1 hash per patient to keep constraints light.)
+export ledger latest_record_hash: Field;
+
+// doctor updates patient record
+export circuit update_record(patient_hash: Field, encrypted_hash: Field): [] {
+    // MVP: simply combine fields
+    latest_record_hash = patient_hash + encrypted_hash;
+}

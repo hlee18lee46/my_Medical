@@ -1,0 +1,24 @@
+pragma language_version 0.17.0;
+
+import CompactStandardLibrary;
+
+// Each patient has one latest encrypted medical record hash.
+// To keep Compact constraints simple, we store only ONE hash.
+// Off-chain indexers can store historical records.
+
+export ledger latest_record_hash: Field;
+
+// Transition: doctor updates the patient’s latest medical record
+// Arguments:
+//   patient_hash      – hash(patient_shield_address)
+//   encrypted_hash    – hash(encrypted_json_blob)
+export circuit update_record(patient_hash: Field, encrypted_hash: Field): [] {
+  
+  // For demo/MVP we simply commit the hash for this patient.
+  // A real version would combine them deterministically:
+  //
+  // latest_record_hash = hash( patient_hash || encrypted_hash )
+  //
+  // But Compact only allows field operations, so we simulate:
+  latest_record_hash = patient_hash + encrypted_hash;
+}

@@ -1,0 +1,17 @@
+pragma language_version 0.17.0;
+
+import CompactStandardLibrary;
+
+// We interpret this as "record version" for encrypted off-chain medical data.
+export ledger round: Counter;
+
+// Doctor updates the patient's medical record.
+// Off-chain we:
+//  - encrypt the JSON record,
+//  - hash it,
+//  - store it in a DB or blob store keyed by:
+//      (patient_address, contract_address, round, tx_id)
+export circuit update_record(): [] {
+  // Every call is "new version"
+  round.increment(1);
+}

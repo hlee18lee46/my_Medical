@@ -1,0 +1,8 @@
+{
+  "version": 3,
+  "file": "index.cjs",
+  "sourceRoot": "../../../",
+  "sources": ["medical_records.compact"],
+  "names": [],
+  "mappings": ";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;EAAA;;;;;;;;;;MAaA,AAAA,aAGC;;;;;;;;;;;;;;;;;;;;;;OAAA;;;GAAC;EAhBF;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;IAKA;;;;;;;;;uDAA6B;;;;;;;GAW3B;EAHF,AAAA,gBAGC;UADC,KAAK;IAAL;;;;;;;;;;2EAAA,KAAK;;;;sDAAA;;GACN;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;IAXD;qCAAA;;;;;;;;;;;wFAA6B;KAAA;;;;;;;;;;;;;;"
+}

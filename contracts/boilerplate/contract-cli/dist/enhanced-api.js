@@ -1,6 +1,6 @@
-// Enhanced API wrapper for Counter Contract
-// Generated on: 2025-11-17T00:34:21.911Z
-// Auto-generated from counter.compact
+// Enhanced API wrapper for Medical_records Contract
+// Generated on: 2025-11-17T22:55:58.002Z
+// Auto-generated from medical_records.compact
 import { ContractAnalyzer } from './contract-analyzer.js';
 import { DynamicCLIGenerator } from './dynamic-cli-generator.js';
 import * as originalApi from './api.js';
@@ -55,20 +55,20 @@ export class EnhancedContractAPI {
     }
     // Dynamic function mapping based on contract analysis
     /**
-     * Execute increment function
+     * Execute update_record function
      */
-    async increment(...args) {
-        return await originalApi.increment(...args);
+    async update_record(...args) {
+        return await originalApi.update_record(...args);
     }
 }
 // Export contract metadata for reference
 export const CONTRACT_METADATA = {
-    name: 'Counter Contract',
-    fileName: 'counter.compact',
-    generatedAt: '2025-11-17T00:34:21.911Z',
+    name: 'Medical_records Contract',
+    fileName: 'medical_records.compact',
+    generatedAt: '2025-11-17T22:55:58.002Z',
     functions: [
         {
-            "name": "increment",
+            "name": "update_record",
             "parameters": [],
             "returnType": "[]",
             "readOnly": false
