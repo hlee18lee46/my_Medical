@@ -4,18 +4,22 @@ export type Witnesses<T> = {
 }
 
 export type ImpureCircuits<T> = {
-  update_record(context: __compactRuntime.CircuitContext<T>): __compactRuntime.CircuitResults<T, []>;
+  update_record(context: __compactRuntime.CircuitContext<T>,
+                patient_hash_0: bigint,
+                encrypted_hash_0: bigint): __compactRuntime.CircuitResults<T, []>;
 }
 
 export type PureCircuits = {
 }
 
 export type Circuits<T> = {
-  update_record(context: __compactRuntime.CircuitContext<T>): __compactRuntime.CircuitResults<T, []>;
+  update_record(context: __compactRuntime.CircuitContext<T>,
+                patient_hash_0: bigint,
+                encrypted_hash_0: bigint): __compactRuntime.CircuitResults<T, []>;
 }
 
 export type Ledger = {
-  readonly round: bigint;
+  readonly latest_record_hash: bigint;
 }
 
 export type ContractReferenceLocations = any;

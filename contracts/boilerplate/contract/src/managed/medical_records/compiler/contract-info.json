@@ -4,6 +4,18 @@
       "name": "update_record",
       "pure": false,
       "arguments": [
+        {
+          "name": "patient_hash",
+          "type": {
+            "type-name": "Field"
+          }
+        },
+        {
+          "name": "encrypted_hash",
+          "type": {
+            "type-name": "Field"
+          }
+        }
       ],
       "result-type": {
         "type-name": "Tuple",

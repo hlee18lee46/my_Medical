@@ -1,8 +1,8 @@
 {
   "version": 3,
   "file": "index.cjs",
-  "sourceRoot": "../../../",
-  "sources": ["medical_records.compact"],
+  "sourceRoot": "../../../../../../",
+  "sources": ["boilerplate/contract/src/medical_records.compact"],
   "names": [],
-  "mappings": ";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;EAAA;;;;;;;;;;MAaA,AAAA,aAGC;;;;;;;;;;;;;;;;;;;;;;OAAA;;;GAAC;EAhBF;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;IAKA;;;;;;;;;uDAA6B;;;;;;;GAW3B;EAHF,AAAA,gBAGC;UADC,KAAK;IAAL;;;;;;;;;;2EAAA,KAAK;;;;sDAAA;;GACN;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;IAXD;qCAAA;;;;;;;;;;;wFAA6B;KAAA;;;;;;;;;;;;;;"
+  "mappings": ";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;EAAA;;;;;;;;;;MAYA,AAAA,aAYC;;;;;cAZ4B,cAAmB;cAAE,gBAAqB;;;;;;;;;;;;;;;;;;;;;;;;;yCAA1C,cAAmB,+BAAE,gBAAqB;;;;;;;;;+CAA1C,cAAmB;+CAAE,gBAAqB;;;OAYtE;;;GAAC;EAxBF;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;IAMA;;;;;;;;;uDAAwC;;;;;;;GAkBtC;EAZF,AAAA,gBAYC,4BAZ4B,cAAmB,EAAE,gBAAqB;;UAWrE,KAAkB,qDAAG;;;;;;;;;;;uHAAkB;;IAAvC;;;;;;;yGAAA,KAAkB;;uDAAA;;GACnB;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;IAlBD;qCAAA;;;;;;;;;;;wFAAwC;KAAA;;;;;;;;;;;;;;"
 }

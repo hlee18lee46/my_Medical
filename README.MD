@@ -50,6 +50,17 @@ docker run -d \
 
 
 
+# 1. Kill ALL containers whose name starts with "testcontainers-"
+docker rm -f $(docker ps -aq --filter "name=testcontainers-") 2>/dev/null || true
+
+# 2. Kill ALL containers using midnight proof-server images (running or stopped)
+docker rm -f $(docker ps -aq --filter "ancestor=midnightnetwork/proof-server:4.0.0") 2>/dev/null || true
+docker rm -f $(docker ps -aq --filter "ancestor=midnightnetwork/proof-server:latest") 2>/dev/null || true
+
+
+rm -rf boilerplate/contract/src/managed/*
+
+
   go to 
 
   cd dapp

@@ -13,7 +13,7 @@ if (expectedRuntimeVersion[0] != actualRuntimeVersion[0]
      throw new __compactRuntime.CompactError(`compiler thinks maximum field value is ${MAX_FIELD}; run time thinks it is ${__compactRuntime.MAX_FIELD}`)
 }
 
-const _descriptor_0 = new __compactRuntime.CompactTypeUnsignedInteger(65535n, 2);
+const _descriptor_0 = new __compactRuntime.CompactTypeField();
 
 const _descriptor_1 = new __compactRuntime.CompactTypeUnsignedInteger(18446744073709551615n, 8);
 
@@ -54,25 +54,47 @@ class Contract {
     this.witnesses = witnesses_0;
     this.circuits = {
       update_record: (...args_1) => {
-        if (args_1.length !== 1) {
-          throw new __compactRuntime.CompactError(`update_record: expected 1 argument (as invoked from Typescript), received ${args_1.length}`);
+        if (args_1.length !== 3) {
+          throw new __compactRuntime.CompactError(`update_record: expected 3 arguments (as invoked from Typescript), received ${args_1.length}`);
         }
         const contextOrig_0 = args_1[0];
+        const patient_hash_0 = args_1[1];
+        const encrypted_hash_0 = args_1[2];
         if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.originalState != undefined && contextOrig_0.transactionContext != undefined)) {
           __compactRuntime.type_error('update_record',
                                       'argument 1 (as invoked from Typescript)',
-                                      'medical_records.compact line 14 char 1',
+                                      'medical_records.compact line 13 char 1',
                                       'CircuitContext',
                                       contextOrig_0)
         }
+        if (!(typeof(patient_hash_0) === 'bigint' && patient_hash_0 >= 0 && patient_hash_0 <= __compactRuntime.MAX_FIELD)) {
+          __compactRuntime.type_error('update_record',
+                                      'argument 1 (argument 2 as invoked from Typescript)',
+                                      'medical_records.compact line 13 char 1',
+                                      'Field',
+                                      patient_hash_0)
+        }
+        if (!(typeof(encrypted_hash_0) === 'bigint' && encrypted_hash_0 >= 0 && encrypted_hash_0 <= __compactRuntime.MAX_FIELD)) {
+          __compactRuntime.type_error('update_record',
+                                      'argument 2 (argument 3 as invoked from Typescript)',
+                                      'medical_records.compact line 13 char 1',
+                                      'Field',
+                                      encrypted_hash_0)
+        }
         const context = { ...contextOrig_0 };
         const partialProofData = {
-          input: { value: [], alignment: [] },
+          input: {
+            value: _descriptor_0.toValue(patient_hash_0).concat(_descriptor_0.toValue(encrypted_hash_0)),
+            alignment: _descriptor_0.alignment().concat(_descriptor_0.alignment())
+          },
           output: undefined,
           publicTranscript: [],
           privateTranscriptOutputs: []
         };
-        const result_0 = this._update_record_0(context, partialProofData);
+        const result_0 = this._update_record_0(context,
+                                               partialProofData,
+                                               patient_hash_0,
+                                               encrypted_hash_0);
         partialProofData.output = { value: [], alignment: [] };
         return { result: result_0, context: context, proofData: partialProofData };
       }
@@ -117,8 +139,8 @@ class Contract {
                                value: __compactRuntime.StateValue.newCell({ value: _descriptor_5.toValue(0n),
                                                                             alignment: _descriptor_5.alignment() }).encode() } },
                      { push: { storage: true,
-                               value: __compactRuntime.StateValue.newCell({ value: _descriptor_1.toValue(0n),
-                                                                            alignment: _descriptor_1.alignment() }).encode() } },
+                               value: __compactRuntime.StateValue.newCell({ value: _descriptor_0.toValue(0n),
+                                                                            alignment: _descriptor_0.alignment() }).encode() } },
                      { ins: { cached: false, n: 1 } }]);
     state_0.data = context.transactionContext.state;
     return {
@@ -127,23 +149,31 @@ class Contract {
       currentZswapLocalState: context.currentZswapLocalState
     }
   }
-  _update_record_0(context, partialProofData) {
-    const tmp_0 = 1n;
+  _update_record_0(context, partialProofData, patient_hash_0, encrypted_hash_0)
+  {
+    const tmp_0 = __compactRuntime.addField(_descriptor_0.fromValue(Contract._query(context,
+                                                                                    partialProofData,
+                                                                                    [
+                                                                                     { dup: { n: 0 } },
+                                                                                     { idx: { cached: false,
+                                                                                              pushPath: false,
+                                                                                              path: [
+                                                                                                     { tag: 'value',
+                                                                                                       value: { value: _descriptor_5.toValue(0n),
+                                                                                                                alignment: _descriptor_5.alignment() } }] } },
+                                                                                     { popeq: { cached: false,
+                                                                                                result: undefined } }]).value),
+                                            1n);
     Contract._query(context,
                     partialProofData,
                     [
-                     { idx: { cached: false,
-                              pushPath: true,
-                              path: [
-                                     { tag: 'value',
-                                       value: { value: _descriptor_5.toValue(0n),
-                                                alignment: _descriptor_5.alignment() } }] } },
-                     { addi: { immediate: parseInt(__compactRuntime.valueToBigInt(
-                                            { value: _descriptor_0.toValue(tmp_0),
-                                              alignment: _descriptor_0.alignment() }
-                                              .value
-                                          )) } },
-                     { ins: { cached: true, n: 1 } }]);
+                     { push: { storage: false,
+                               value: __compactRuntime.StateValue.newCell({ value: _descriptor_5.toValue(0n),
+                                                                            alignment: _descriptor_5.alignment() }).encode() } },
+                     { push: { storage: true,
+                               value: __compactRuntime.StateValue.newCell({ value: _descriptor_0.toValue(tmp_0),
+                                                                            alignment: _descriptor_0.alignment() }).encode() } },
+                     { ins: { cached: false, n: 1 } }]);
     return [];
   }
   static _query(context, partialProofData, prog) {
@@ -185,8 +215,8 @@ function ledger(state) {
     privateTranscriptOutputs: []
   };
   return {
-    get round() {
-      return _descriptor_1.fromValue(Contract._query(context,
+    get latest_record_hash() {
+      return _descriptor_0.fromValue(Contract._query(context,
                                                      partialProofData,
                                                      [
                                                       { dup: { n: 0 } },
@@ -196,7 +226,7 @@ function ledger(state) {
                                                                       { tag: 'value',
                                                                         value: { value: _descriptor_5.toValue(0n),
                                                                                  alignment: _descriptor_5.alignment() } }] } },
-                                                      { popeq: { cached: true,
+                                                      { popeq: { cached: false,
                                                                  result: undefined } }]).value);
     }
   };

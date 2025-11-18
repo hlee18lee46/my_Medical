@@ -2,16 +2,24 @@ pragma language_version 0.17.0;
 
 import CompactStandardLibrary;
 
-// We interpret this as "record version" for encrypted off-chain medical data.
-export ledger round: Counter;
+// Public ledger: simple counter / marker for latest update.
+// (Real patient-specific data lives in the transaction witness / off-chain indexer.)
+export ledger latest_record_hash: Field;
 
-// Doctor updates the patient's medical record.
-// Off-chain we:
-//  - encrypt the JSON record,
-//  - hash it,
-//  - store it in a DB or blob store keyed by:
-//      (patient_address, contract_address, round, tx_id)
-export circuit update_record(): [] {
-  // Every call is "new version"
-  round.increment(1);
+// Transition: doctor updates the patient’s latest medical record
+// Arguments:
+//   patient_hash      – hash(patient_shield_address)
+//   encrypted_hash    – hash(encrypted_json_blob)
+export circuit update_record(patient_hash: Field, encrypted_hash: Field): [] {
+  // NOTE:
+  // patient_hash and encrypted_hash are *witness* values in the proof.
+  // Writing them (or any direct combination) into the ledger would "disclose"
+  // a witness value, which Compact forbids unless you use special annotations.
+  //
+  // For the hackathon MVP, we avoid that by only updating a public counter.
+  // Off-chain, we can still read patient_hash / encrypted_hash from the tx
+  // inputs and index them.
+
+  // Just bump a public field so we can see on-chain activity:
+  latest_record_hash = latest_record_hash + 1;
 }
