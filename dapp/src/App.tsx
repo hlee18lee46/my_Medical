@@ -158,35 +158,56 @@ export default function App() {
     setDoctorStatus(null);
   };
 
-  const handleDoctorSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setDoctorStatus(null);
+const handleDoctorSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setDoctorStatus(null);
 
-    if (!doctorForm.patientShieldAddr.trim()) {
-      setDoctorStatus("❗ Please enter the patient's shield address.");
-      return;
-    }
-    if (!doctorForm.diagnosis.trim() && !doctorForm.prescription.trim()) {
-      setDoctorStatus("❗ Enter at least a diagnosis or a prescription.");
-      return;
-    }
+  if (!doctorForm.patientShieldAddr.trim()) {
+    setDoctorStatus("❗ Please enter the patient's shield address.");
+    return;
+  }
+  if (!doctorForm.diagnosis.trim() && !doctorForm.prescription.trim()) {
+    setDoctorStatus("❗ Enter at least a diagnosis or a prescription.");
+    return;
+  }
 
-    const payload = {
-      doctorShieldAddr: shieldAddr,
-      patientShieldAddr: doctorForm.patientShieldAddr.trim(),
-      visitDate: doctorForm.visitDate,
-      diagnosis: doctorForm.diagnosis.trim(),
-      prescription: doctorForm.prescription.trim(),
-      notes: doctorForm.notes.trim(),
-    };
-
-    console.log("Doctor record payload (MVP, not yet on-chain):", payload);
-
-    // This is where we'll later:
-    // 1) Encrypt `payload` to ciphertext
-    // 2) Call the Compact contract's add_record(patient, ciphertext)
-    setDoctorStatus("✅ Record prepared locally. Next step: send to Midnight contract (coming soon).");
+  const payload = {
+    doctorShieldAddr: shieldAddr,
+    patientShieldAddr: doctorForm.patientShieldAddr.trim(),
+    visitDate: doctorForm.visitDate,
+    diagnosis: doctorForm.diagnosis.trim(),
+    prescription: doctorForm.prescription.trim(),
+    notes: doctorForm.notes.trim(),
   };
+
+  try {
+    const res = await fetch("http://localhost:4000/api/records", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("Backend error:", text);
+      setDoctorStatus("❌ Backend error while preparing record.");
+      return;
+    }
+
+    const data = await res.json();
+    console.log("Backend response:", data);
+
+    // ⚠️ For demo: show hashes directly
+    setDoctorStatus(
+      `✅ Record hashed.\npatient_hash = ${data.patient_hash}\nencrypted_hash = ${data.encrypted_hash}`
+    );
+
+    // TODO (next step): call Midnight contract update_record(patient_hash, encrypted_hash)
+  } catch (err) {
+    console.error(err);
+    setDoctorStatus("❌ Network error talking to backend.");
+  }
+};
 
   return (
     <div style={{ minHeight: "100vh", background: "#f9fafb" }}>
