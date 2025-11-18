@@ -1,1 +1,1 @@
-export declare const witnesses: Record<string, (ctx: any) => unknown[]>;
+export declare const witnesses: {};

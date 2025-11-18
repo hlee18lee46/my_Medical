@@ -16,7 +16,7 @@ import { WebSocket } from 'ws';
 import * as fsAsync from 'node:fs/promises';
 import * as fs from 'node:fs';
 import { ContractAnalyzer } from './contract-analyzer.js';
-import { CounterPrivateStateId, } from './common-types';
+import { CounterPrivateStateId, } from './common-types.js';
 import { contractConfig } from './config';
 // Get the dynamic contract module
 const getContractModule = () => {

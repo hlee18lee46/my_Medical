@@ -5,7 +5,7 @@ import { type Resource } from '@midnight-ntwrk/wallet';
 import { type Wallet } from '@midnight-ntwrk/wallet-api';
 import { type Logger } from 'pino';
 import * as fs from 'node:fs';
-import { type CounterContract, type CounterPrivateState, type CounterProviders, type DeployedCounterContract } from './common-types';
+import { type CounterContract, type CounterPrivateState, type CounterProviders, type DeployedCounterContract } from './common-types.js';
 import { type Config } from './config';
 /**
  * Create an opaque string value from a plain string

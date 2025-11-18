@@ -1,6 +1,26 @@
 // backend/index.js
 import express from "express";
 import cors from "cors";
+import "dotenv/config";
+import { exec } from "child_process";
+import path from "path";
+
+function callMidnightUpdate(patient_hash, encrypted_hash) {
+  return new Promise((resolve, reject) => {
+    const cliPath = path.join(
+      process.cwd(),
+      "../contracts/boilerplate/contract-cli/dist/cli.js"
+    );
+
+    const cmd = `node ${cliPath} update-record ${patient_hash} ${encrypted_hash}`;
+    console.log("▶️ Running:", cmd);
+
+    exec(cmd, (err, stdout, stderr) => {
+      if (err) return reject(stderr || stdout);
+      resolve(stdout);
+    });
+  });
+}
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -8,11 +28,9 @@ const PORT = process.env.PORT || 4000;
 app.use(cors());
 app.use(express.json());
 
-// ---- In-memory store (per patient shield address) ----
-// recordsByPatient: { [patientShieldAddr: string]: MedicalRecord[] }
 const recordsByPatient = {};
 
-// --- simple numeric hash helper (demo only, NOT secure) ---
+// demo hash (BigInt), NOT secure
 function demoHash(input) {
   let h = 0n;
   for (const ch of input) {
@@ -21,8 +39,7 @@ function demoHash(input) {
   return h;
 }
 
-// ---- POST /api/records : doctor submits record ----
-app.post("/api/records", (req, res) => {
+app.post("/api/records", async (req, res) => {
   const {
     doctorShieldAddr,
     patientShieldAddr,
@@ -46,16 +63,14 @@ app.post("/api/records", (req, res) => {
     createdAt: new Date().toISOString(),
   };
 
-  // Store in memory
   if (!recordsByPatient[patientShieldAddr]) {
     recordsByPatient[patientShieldAddr] = [];
   }
   recordsByPatient[patientShieldAddr].push(record);
 
-  // For the contract: hash patient ID and ciphertext (here we fake ciphertext as JSON string)
   const plaintextJson = JSON.stringify(record);
   const patient_hash = demoHash(patientShieldAddr);
-  const encrypted_hash = demoHash(plaintextJson); // demo: NOT real encryption
+  const encrypted_hash = demoHash(plaintextJson);
 
   console.log("✅ Record stored for patient:", patientShieldAddr);
   console.log(
@@ -64,19 +79,28 @@ app.post("/api/records", (req, res) => {
     "encrypted_hash =",
     encrypted_hash.toString()
   );
-  console.log(
-    "💡 Use these numbers in your Midnight CLI `update_record(patient_hash, encrypted_hash)`."
-  );
+
+  let onChain = null;
+  try {
+    const cliOutput = await callMidnightUpdate(
+      patient_hash.toString(),
+      encrypted_hash.toString()
+    );
+    console.log("🌙 On-chain CLI output:", cliOutput);
+    onChain = { rawOutput: cliOutput };
+  } catch (err) {
+    console.error("❌ Failed to call Midnight CLI:", err);
+  }
 
   return res.json({
     ok: true,
     patient_hash: patient_hash.toString(),
     encrypted_hash: encrypted_hash.toString(),
     record,
+    onChain,
   });
 });
 
-// ---- GET /api/records/:patientShieldAddr : patient fetches all their records ----
 app.get("/api/records/:patientShieldAddr", (req, res) => {
   const { patientShieldAddr } = req.params;
   const records = recordsByPatient[patientShieldAddr] ?? [];

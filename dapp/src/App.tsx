@@ -1,12 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Navbar from "./components/Navbar";
 import { getMidnightProvider } from "./midnight-provider";
 
 type WalletState = {
-  address?: string; addressLegacy?: string;
-  coinPublicKey?: string; coinPublicKeyLegacy?: string;
-  encryptionPublicKey?: string; encryptionPublicKeyLegacy?: string;
-  balances?: any; [k: string]: any;
+  address?: string;
+  addressLegacy?: string;
+  coinPublicKey?: string;
+  coinPublicKeyLegacy?: string;
+  encryptionPublicKey?: string;
+  encryptionPublicKeyLegacy?: string;
+  balances?: any;
+  [k: string]: any;
 };
 
 type UserRole = "patient" | "doctor" | "pharmacy" | "insurance" | null;
@@ -19,40 +23,73 @@ type DoctorFormState = {
   notes: string;
 };
 
-function deriveTDustBalanceFromState(s:any): string {
+type MedicalRecord = {
+  doctorShieldAddr: string;
+  patientShieldAddr: string;
+  visitDate: string;
+  diagnosis: string;
+  prescription: string;
+  notes: string;
+  createdAt: string;
+};
+
+function deriveTDustBalanceFromState(s: any): string {
   if (!s) return "—";
   if (s?.balances?.tDUST != null) return String(s.balances.tDUST);
   if (s?.balances?.tdust != null) return String(s.balances.tdust);
-  const arrays:any[]=[]; if (Array.isArray(s?.assets)) arrays.push(s.assets);
+  const arrays: any[] = [];
+  if (Array.isArray(s?.assets)) arrays.push(s.assets);
   if (Array.isArray(s?.balances)) arrays.push(s.balances);
   if (Array.isArray(s?.coins)) arrays.push(s.coins);
   for (const arr of arrays) {
-    const hit = arr.find((x:any)=>x?.asset==="tDUST"||x?.ticker==="tDUST"||x?.symbol==="tDUST"||x?.denom==="tDUST");
-    if (hit?.amount!=null) return String(hit.amount);
-    if (hit?.balance!=null) return String(hit.balance);
-    if (hit?.quantity!=null) return String(hit.quantity);
+    const hit = arr.find(
+      (x: any) =>
+        x?.asset === "tDUST" ||
+        x?.ticker === "tDUST" ||
+        x?.symbol === "tDUST" ||
+        x?.denom === "tDUST"
+    );
+    if (hit?.amount != null) return String(hit.amount);
+    if (hit?.balance != null) return String(hit.balance);
+    if (hit?.quantity != null) return String(hit.quantity);
   }
   return "—";
 }
 
-function detectProviderLabel(api:any, provider:any): string {
-  const m:any = (window as any)?.midnight;
+function detectProviderLabel(api: any, provider: any): string {
+  const m: any = (window as any)?.midnight;
   if (m && typeof m === "object") {
-    for (const k of Object.keys(m)) if (m[k]===provider||m[k]===api) return k;
+    for (const k of Object.keys(m)) if (m[k] === provider || m[k] === api) return k;
   }
   const c = (window as any)?.cardano?.midnight;
-  if (c && (provider===c || api===c)) return "cardano.midnight";
+  if (c && (provider === c || api === c)) return "cardano.midnight";
   return api?.providerName ?? provider?.providerName ?? "(auto-detected)";
 }
-function detectWalletLabel(api:any, provider:any): string {
-  return api?.walletName ?? provider?.walletName ?? api?.wallet?.name ?? provider?.wallet?.name ??
-         api?.name ?? provider?.name ?? provider?.constructor?.name ?? "—";
+
+function detectWalletLabel(api: any, provider: any): string {
+  return (
+    api?.walletName ??
+    provider?.walletName ??
+    api?.wallet?.name ??
+    provider?.wallet?.name ??
+    api?.name ??
+    provider?.name ??
+    provider?.constructor?.name ??
+    "—"
+  );
 }
-async function detectApiVersion(api:any, provider:any): Promise<string> {
+
+async function detectApiVersion(api: any, provider: any): Promise<string> {
   const vals = [api?.apiVersion, api?.version, provider?.apiVersion, provider?.version];
   for (const v of vals) if (typeof v === "string" && v) return v;
   const fns = [api?.getVersion, provider?.getVersion, api?.info, provider?.info];
-  for (const fn of fns) try { if (typeof fn==="function") { const v = await fn.call(api ?? provider); if (v) return v; } } catch {}
+  for (const fn of fns)
+    try {
+      if (typeof fn === "function") {
+        const v = await fn.call(api ?? provider);
+        if (v) return v;
+      }
+    } catch {}
   return "—";
 }
 
@@ -65,8 +102,8 @@ export default function App() {
   const [apiVersion, setApiVersion] = useState("—");
   const [addr, setAddr] = useState("—");
   const [tDustBalance, setTDustBalance] = useState("—");
-  const [capWalletTransfer, setCapWalletTransfer] = useState<boolean|null>(null);
-  const [capCoinEnum, setCapCoinEnum] = useState<boolean|null>(null);
+  const [capWalletTransfer, setCapWalletTransfer] = useState<boolean | null>(null);
+  const [capCoinEnum, setCapCoinEnum] = useState<boolean | null>(null);
 
   const [shieldAddr, setShieldAddr] = useState("—");
   const [shieldCPK, setShieldCPK] = useState("—");
@@ -86,13 +123,25 @@ export default function App() {
   });
   const [doctorStatus, setDoctorStatus] = useState<string | null>(null);
 
-  const readState = async (src:any) => {
+  // Patient view state
+  const [patientRecords, setPatientRecords] = useState<MedicalRecord[] | null>(null);
+  const [patientStatus, setPatientStatus] = useState<string | null>(null);
+
+  const readState = async (src: any) => {
     if (!src) return null;
     if (typeof src.serializeState === "function") {
       const s = await src.serializeState();
-      try { const parsed = typeof s === "string" ? JSON.parse(s) : s; return parsed?.state ?? parsed ?? null; } catch { return null; }
+      try {
+        const parsed = typeof s === "string" ? JSON.parse(s) : s;
+        return parsed?.state ?? parsed ?? null;
+      } catch {
+        return null;
+      }
     }
-    if (typeof src.state === "function") { const st = await src.state(); return st?.state ?? st ?? null; }
+    if (typeof src.state === "function") {
+      const st = await src.state();
+      return st?.state ?? st ?? null;
+    }
     return null;
   };
 
@@ -108,22 +157,23 @@ export default function App() {
       setWalletName(detectWalletLabel(api, provider));
       setApiVersion(await detectApiVersion(api, provider));
 
-      const state: WalletState | null = (await readState(api)) ?? (await readState(provider)) ?? null;
+      const state: WalletState | null =
+        (await readState(api)) ?? (await readState(provider)) ?? null;
       const address = state?.address ?? state?.addresses?.[0] ?? state?.account?.address ?? "—";
       setAddr(address);
       setTDustBalance(deriveTDustBalanceFromState(state));
 
       const w = api ?? provider;
       setCapWalletTransfer(
-        typeof w?.balanceAndProveTransaction==="function" &&
-        typeof w?.submitTransaction==="function"
+        typeof w?.balanceAndProveTransaction === "function" &&
+          typeof w?.submitTransaction === "function"
       );
       setCapCoinEnum(
-        typeof w?.listCoins==="function" ||
-        typeof w?.getUtxos==="function" ||
-        typeof w?.coins==="function" ||
-        typeof w?.serializeState==="function" ||
-        typeof w?.state==="function"
+        typeof w?.listCoins === "function" ||
+          typeof w?.getUtxos === "function" ||
+          typeof w?.coins === "function" ||
+          typeof w?.serializeState === "function" ||
+          typeof w?.state === "function"
       );
 
       setShieldAddr(state?.address ?? "—");
@@ -132,12 +182,14 @@ export default function App() {
       setLegacyAddr(state?.addressLegacy ?? "—");
       setLegacyCPK(state?.coinPublicKeyLegacy ?? "—");
       setLegacyEPK(state?.encryptionPublicKeyLegacy ?? "—");
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
     loadWalletInfoNonInteractive();
-    const onConnected = (e:Event) => {
+    const onConnected = (e: Event) => {
       const { api, provider } = (e as CustomEvent).detail || {};
       loadWalletInfoNonInteractive({ api, provider });
     };
@@ -154,69 +206,103 @@ export default function App() {
   };
 
   const handleDoctorChange = (field: keyof DoctorFormState, value: string) => {
-    setDoctorForm(prev => ({ ...prev, [field]: value }));
+    setDoctorForm((prev) => ({ ...prev, [field]: value }));
     setDoctorStatus(null);
   };
 
-const handleDoctorSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setDoctorStatus(null);
+  const handleDoctorSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDoctorStatus(null);
 
-  if (!doctorForm.patientShieldAddr.trim()) {
-    setDoctorStatus("❗ Please enter the patient's shield address.");
-    return;
-  }
-  if (!doctorForm.diagnosis.trim() && !doctorForm.prescription.trim()) {
-    setDoctorStatus("❗ Enter at least a diagnosis or a prescription.");
-    return;
-  }
-
-  const payload = {
-    doctorShieldAddr: shieldAddr,
-    patientShieldAddr: doctorForm.patientShieldAddr.trim(),
-    visitDate: doctorForm.visitDate,
-    diagnosis: doctorForm.diagnosis.trim(),
-    prescription: doctorForm.prescription.trim(),
-    notes: doctorForm.notes.trim(),
-  };
-
-  try {
-    const res = await fetch("http://localhost:4000/api/records", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) {
-      const text = await res.text();
-      console.error("Backend error:", text);
-      setDoctorStatus("❌ Backend error while preparing record.");
+    if (!doctorForm.patientShieldAddr.trim()) {
+      setDoctorStatus("❗ Please enter the patient's shield address.");
+      return;
+    }
+    if (!doctorForm.diagnosis.trim() && !doctorForm.prescription.trim()) {
+      setDoctorStatus("❗ Enter at least a diagnosis or a prescription.");
       return;
     }
 
-    const data = await res.json();
-    console.log("Backend response:", data);
+    const payload = {
+      doctorShieldAddr: shieldAddr,
+      patientShieldAddr: doctorForm.patientShieldAddr.trim(),
+      visitDate: doctorForm.visitDate,
+      diagnosis: doctorForm.diagnosis.trim(),
+      prescription: doctorForm.prescription.trim(),
+      notes: doctorForm.notes.trim(),
+    };
 
-    // ⚠️ For demo: show hashes directly
-    setDoctorStatus(
-      `✅ Record hashed.\npatient_hash = ${data.patient_hash}\nencrypted_hash = ${data.encrypted_hash}`
-    );
+    try {
+      const res = await fetch("http://localhost:4000/api/records", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-    // TODO (next step): call Midnight contract update_record(patient_hash, encrypted_hash)
-  } catch (err) {
-    console.error(err);
-    setDoctorStatus("❌ Network error talking to backend.");
-  }
-};
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Backend error:", text);
+        setDoctorStatus("❌ Backend error while preparing record.");
+        return;
+      }
+
+      const data = await res.json();
+      console.log("Backend response:", data);
+
+      setDoctorStatus(
+        `✅ Record hashed.\npatient_hash = ${data.patient_hash}\nencrypted_hash = ${data.encrypted_hash}`
+      );
+    } catch (err) {
+      console.error(err);
+      setDoctorStatus("❌ Network error talking to backend.");
+    }
+  };
+
+  const handleFetchPatientRecords = async () => {
+    setPatientStatus(null);
+
+    if (!shieldAddr || shieldAddr === "—") {
+      setPatientStatus("❗ Connect your Midnight wallet first.");
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `http://localhost:4000/api/records/${encodeURIComponent(shieldAddr)}`
+      );
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Backend error fetching records:", text);
+        setPatientStatus("❌ Backend error while fetching your records.");
+        return;
+      }
+
+      const data = await res.json();
+      console.log("Patient records response:", data);
+
+      const list: MedicalRecord[] = data.records || [];
+      setPatientRecords(list);
+
+      if (list.length === 0) {
+        setPatientStatus("ℹ️ No records found for your shield address yet.");
+      } else {
+        setPatientStatus(`✅ Loaded ${list.length} record(s).`);
+      }
+    } catch (err) {
+      console.error(err);
+      setPatientStatus("❌ Network error talking to backend.");
+    }
+  };
 
   return (
     <div style={{ minHeight: "100vh", background: "#f9fafb" }}>
       <Navbar />
-      <main style={{ paddingTop:"5rem", paddingBottom:"3rem", textAlign:"center" }}>
-        <h1 style={{ fontSize:"2.25rem", marginBottom:"0.5rem", color:"#0f172a" }}>
+      <main style={{ paddingTop: "5rem", paddingBottom: "3rem", textAlign: "center" }}>
+        <h1 style={{ fontSize: "2.25rem", marginBottom: "0.5rem", color: "#0f172a" }}>
           Welcome to my_Medical
         </h1>
-        <p style={{ color:"#475569", marginBottom:"1.5rem" }}>
+        <p style={{ color: "#475569", marginBottom: "1.5rem" }}>
           Secure healthcare access with your Midnight Lace wallet.
         </p>
 
@@ -233,11 +319,13 @@ const handleDoctorSubmit = async (e: React.FormEvent) => {
           <Row label="tDUST Balance" value={tDustBalance} />
           <Row
             label="Capabilities"
-            value={`walletTransfer=${String(capWalletTransfer)} · coinEnum=${String(capCoinEnum)}`}
+            value={`walletTransfer=${String(capWalletTransfer)} · coinEnum=${String(
+              capCoinEnum
+            )}`}
           />
         </Card>
 
-        <Card title="Wallet Keys & Addresses" style={{ marginTop:16 }}>
+        <Card title="Wallet Keys & Addresses" style={{ marginTop: 16 }}>
           <Row label="Shield Address" value={shieldAddr} />
           <Row label="Shield CPK" value={shieldCPK} />
           <Row label="Shield EPK" value={shieldEPK} />
@@ -247,21 +335,21 @@ const handleDoctorSubmit = async (e: React.FormEvent) => {
         </Card>
 
         {/* Role selection */}
-        <Card title="Continue as" style={{ marginTop:16 }}>
-          <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
-            {["patient","doctor","pharmacy","insurance"].map((r) => (
+        <Card title="Continue as" style={{ marginTop: 16 }}>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            {["patient", "doctor", "pharmacy", "insurance"].map((r) => (
               <button
                 key={r}
                 onClick={() => setRole(r as any)}
                 style={{
-                  padding:"8px 14px",
-                  borderRadius:999,
+                  padding: "8px 14px",
+                  borderRadius: 999,
                   border: role === r ? "2px solid #0f172a" : "1px solid #0f172a",
                   background: role === r ? "#0f172a" : "#ffffff",
                   color: role === r ? "#ffffff" : "#0f172a",
-                  fontSize:14,
-                  fontWeight:600,
-                  cursor:"pointer",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: "pointer",
                 }}
               >
                 {r.charAt(0).toUpperCase() + r.slice(1)}
@@ -269,7 +357,7 @@ const handleDoctorSubmit = async (e: React.FormEvent) => {
             ))}
           </div>
           {role && (
-            <p style={{ marginTop:12, fontSize:13, color:"#475569" }}>
+            <p style={{ marginTop: 12, fontSize: 13, color: "#475569" }}>
               Current role: <strong>{roleLabel(role)}</strong>
             </p>
           )}
@@ -277,22 +365,25 @@ const handleDoctorSubmit = async (e: React.FormEvent) => {
 
         {/* Role-specific section: Doctor – create record */}
         {role === "doctor" && (
-          <Card title="Doctor: Create Medical Record" style={{ marginTop:16 }}>
-            <form onSubmit={handleDoctorSubmit} style={{ display:"flex", flexDirection:"column", gap:12 }}>
-              <div style={{ fontSize:13, color:"#475569", marginBottom:4 }}>
+          <Card title="Doctor: Create Medical Record" style={{ marginTop: 16 }}>
+            <form
+              onSubmit={handleDoctorSubmit}
+              style={{ display: "flex", flexDirection: "column", gap: 12 }}
+            >
+              <div style={{ fontSize: 13, color: "#475569", marginBottom: 4 }}>
                 Signed in as doctor (shield address):
-                <div style={{ marginTop:4 }}>
+                <div style={{ marginTop: 4 }}>
                   <code
                     style={{
-                      background:"#0f172a",
-                      border:"1px solid #1e293b",
-                      borderRadius:6,
-                      padding:"6px 8px",
-                      whiteSpace:"nowrap",
-                      overflow:"hidden",
-                      textOverflow:"ellipsis",
-                      color:"#e5e7eb",
-                      fontSize:12
+                      background: "#0f172a",
+                      border: "1px solid #1e293b",
+                      borderRadius: 6,
+                      padding: "6px 8px",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      color: "#e5e7eb",
+                      fontSize: 12,
                     }}
                     title={shieldAddr}
                   >
@@ -301,10 +392,7 @@ const handleDoctorSubmit = async (e: React.FormEvent) => {
                 </div>
               </div>
 
-              <Field
-                label="Patient Shield Address"
-                required
-              >
+              <Field label="Patient Shield Address" required>
                 <input
                   type="text"
                   value={doctorForm.patientShieldAddr}
@@ -356,23 +444,30 @@ const handleDoctorSubmit = async (e: React.FormEvent) => {
               <button
                 type="submit"
                 style={{
-                  alignSelf:"flex-start",
-                  padding:"8px 16px",
-                  borderRadius:999,
-                  border:"none",
-                  background:"#0f172a",
-                  color:"#ffffff",
-                  fontWeight:600,
-                  fontSize:14,
-                  cursor:"pointer",
-                  marginTop:4,
+                  alignSelf: "flex-start",
+                  padding: "8px 16px",
+                  borderRadius: 999,
+                  border: "none",
+                  background: "#0f172a",
+                  color: "#ffffff",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  cursor: "pointer",
+                  marginTop: 4,
                 }}
               >
-                Save Record (MVP, local only)
+                Save & Hash Record
               </button>
 
               {doctorStatus && (
-                <p style={{ marginTop:8, fontSize:13, color: doctorStatus.startsWith("✅") ? "#16a34a" : "#b91c1c" }}>
+                <p
+                  style={{
+                    marginTop: 8,
+                    fontSize: 13,
+                    whiteSpace: "pre-line",
+                    color: doctorStatus.startsWith("✅") ? "#16a34a" : "#b91c1c",
+                  }}
+                >
                   {doctorStatus}
                 </p>
               )}
@@ -380,12 +475,125 @@ const handleDoctorSubmit = async (e: React.FormEvent) => {
           </Card>
         )}
 
+        {/* Role-specific section: Patient – view their records */}
+        {role === "patient" && (
+          <Card title="Patient: My Medical Records" style={{ marginTop: 16 }}>
+            <div style={{ fontSize: 13, color: "#475569", marginBottom: 8 }}>
+              Connected shield address:
+              <div style={{ marginTop: 4 }}>
+                <code
+                  style={{
+                    background: "#0f172a",
+                    border: "1px solid #1e293b",
+                    borderRadius: 6,
+                    padding: "6px 8px",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    color: "#e5e7eb",
+                    fontSize: 12,
+                  }}
+                  title={shieldAddr}
+                >
+                  {shieldAddr}
+                </code>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleFetchPatientRecords}
+              style={{
+                padding: "8px 16px",
+                borderRadius: 999,
+                border: "none",
+                background: "#0f172a",
+                color: "#ffffff",
+                fontWeight: 600,
+                fontSize: 14,
+                cursor: "pointer",
+                marginTop: 4,
+                marginBottom: 12,
+              }}
+            >
+              Fetch My Records
+            </button>
+
+            {patientStatus && (
+              <p
+                style={{
+                  marginTop: 4,
+                  fontSize: 13,
+                  color: patientStatus.startsWith("✅")
+                    ? "#16a34a"
+                    : patientStatus.startsWith("ℹ️")
+                    ? "#0369a1"
+                    : "#b91c1c",
+                }}
+              >
+                {patientStatus}
+              </p>
+            )}
+
+            {patientRecords && patientRecords.length > 0 && (
+              <div
+                style={{
+                  marginTop: 12,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                }}
+              >
+                {patientRecords.map((rec, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      border: "1px solid #e2e8f0",
+                      borderRadius: 10,
+                      padding: 10,
+                      background: "#f8fafc",
+                      fontSize: 13,
+                      textAlign: "left",
+                    }}
+                  >
+                    <div style={{ marginBottom: 4 }}>
+                      <strong>Visit Date:</strong> {rec.visitDate}
+                    </div>
+                    {rec.diagnosis && (
+                      <div>
+                        <strong>Diagnosis:</strong> {rec.diagnosis}
+                      </div>
+                    )}
+                    {rec.prescription && (
+                      <div>
+                        <strong>Prescription:</strong> {rec.prescription}
+                      </div>
+                    )}
+                    {rec.notes && (
+                      <div>
+                        <strong>Notes:</strong> {rec.notes}
+                      </div>
+                    )}
+                    <div style={{ marginTop: 4, color: "#64748b", fontSize: 12 }}>
+                      <strong>Doctor:</strong>{" "}
+                      <span style={{ wordBreak: "break-all" }}>{rec.doctorShieldAddr}</span>
+                    </div>
+                    <div style={{ color: "#94a3b8", fontSize: 11 }}>
+                      Created at: {new Date(rec.createdAt).toLocaleString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        )}
+
         {/* Placeholder for other roles */}
-        {role && role !== "doctor" && (
-          <Card title={`${roleLabel(role)} dashboard`} style={{ marginTop:16 }}>
-            <p style={{ fontSize:14, color:"#475569" }}>
-              Role-specific flows for <strong>{roleLabel(role)}</strong> are coming next.
-              For now, you can connect your wallet and choose a role.
+        {role && role !== "doctor" && role !== "patient" && (
+          <Card title={`${roleLabel(role)} dashboard`} style={{ marginTop: 16 }}>
+            <p style={{ fontSize: 14, color: "#475569" }}>
+              Role-specific flows for <strong>{roleLabel(role)}</strong> are coming next. For now,
+              you can connect your wallet and choose a role.
             </p>
           </Card>
         )}
@@ -395,47 +603,63 @@ const handleDoctorSubmit = async (e: React.FormEvent) => {
 }
 
 const inputStyle: React.CSSProperties = {
-  width:"100%",
-  padding:"8px 10px",
-  borderRadius:8,
-  border:"1px solid #cbd5f5",
-  fontSize:14,
-  outline:"none",
+  width: "100%",
+  padding: "8px 10px",
+  borderRadius: 8,
+  border: "1px solid #cbd5f5",
+  fontSize: 14,
+  outline: "none",
 };
 
 const textAreaStyle: React.CSSProperties = {
   ...inputStyle,
-  resize:"vertical",
+  resize: "vertical",
 };
 
-function Card({ title, children, onRefresh, loading, style }:{
-  title:string; children:React.ReactNode; onRefresh?:()=>void; loading?:boolean; style?:React.CSSProperties;
+function Card({
+  title,
+  children,
+  onRefresh,
+  loading,
+  style,
+}: {
+  title: string;
+  children: React.ReactNode;
+  onRefresh?: () => void;
+  loading?: boolean;
+  style?: React.CSSProperties;
 }) {
   return (
-    <div style={{
-      background:"#ffffff",
-      color:"#1e293b",
-      padding:16,
-      borderRadius:12,
-      maxWidth:960,
-      margin:"0 auto",
-      textAlign:"left",
-      border:"2px solid #000",
-      ...style
-    }}>
-      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:10 }}>
+    <div
+      style={{
+        background: "#ffffff",
+        color: "#1e293b",
+        padding: 16,
+        borderRadius: 12,
+        maxWidth: 960,
+        margin: "0 auto",
+        textAlign: "left",
+        border: "2px solid #000",
+        ...style,
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
         <strong>{title}</strong>
         {onRefresh && (
-          <button onClick={onRefresh} disabled={!!loading} style={{
-            padding:"6px 12px",
-            borderRadius:8,
-            border:"1px solid #000",
-            background:"#f1f5f9",
-            color:"#000",
-            cursor:"pointer",
-            fontSize:13,
-            opacity: loading ? 0.7 : 1
-          }}>
+          <button
+            onClick={onRefresh}
+            disabled={!!loading}
+            style={{
+              padding: "6px 12px",
+              borderRadius: 8,
+              border: "1px solid #000",
+              background: "#f1f5f9",
+              color: "#000",
+              cursor: "pointer",
+              fontSize: 13,
+              opacity: loading ? 0.7 : 1,
+            }}
+          >
             {loading ? "Refreshing…" : "Refresh"}
           </button>
         )}
@@ -445,27 +669,29 @@ function Card({ title, children, onRefresh, loading, style }:{
   );
 }
 
-function Row({ label, value }:{ label:string; value:string }) {
+function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{
-      display:"grid",
-      gridTemplateColumns:"180px 1fr",
-      gap:8,
-      alignItems:"center",
-      margin:"6px 0"
-    }}>
-      <div style={{ color:"#2563eb", fontSize:13 }}>{label}</div>
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "180px 1fr",
+        gap: 8,
+        alignItems: "center",
+        margin: "6px 0",
+      }}
+    >
+      <div style={{ color: "#2563eb", fontSize: 13 }}>{label}</div>
       <code
         style={{
-          background:"#0f172a",
-          border:"1px solid #1e293b",
-          borderRadius:6,
-          padding:"6px 8px",
-          whiteSpace:"nowrap",
-          overflow:"hidden",
-          textOverflow:"ellipsis",
-          color:"#e5e7eb",
-          fontSize:12
+          background: "#0f172a",
+          border: "1px solid #1e293b",
+          borderRadius: 6,
+          padding: "6px 8px",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          color: "#e5e7eb",
+          fontSize: 12,
         }}
         title={value}
       >
@@ -478,9 +704,10 @@ function Row({ label, value }:{ label:string; value:string }) {
 function Field(props: { label: string; required?: boolean; children: React.ReactNode }) {
   const { label, required, children } = props;
   return (
-    <label style={{ display:"block", textAlign:"left", fontSize:13 }}>
-      <span style={{ display:"inline-block", marginBottom:4, color:"#0f172a" }}>
-        {label}{required && <span style={{ color:"#b91c1c" }}> *</span>}
+    <label style={{ display: "block", textAlign: "left", fontSize: 13 }}>
+      <span style={{ display: "inline-block", marginBottom: 4, color: "#0f172a" }}>
+        {label}
+        {required && <span style={{ color: "#b91c1c" }}> *</span>}
       </span>
       {children}
     </label>

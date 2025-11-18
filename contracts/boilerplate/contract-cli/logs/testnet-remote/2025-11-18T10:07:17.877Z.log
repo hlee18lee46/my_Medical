@@ -1,0 +1,18 @@
+{"level":30,"time":1763460445462,"pid":34143,"hostname":"Hans-Mac-mini.local","msg":"✅ Using wallet seed from environment variable"}
+{"level":30,"time":1763460445467,"pid":34143,"hostname":"Hans-Mac-mini.local","msg":"File path for save file not found, building wallet from scratch"}
+{"level":30,"time":1763460445517,"pid":34143,"hostname":"Hans-Mac-mini.local","msg":"Your wallet seed is: c88f0466a7d176768b3935c6276cf3242b02925fbffb2c5377946d40124cecd3"}
+{"level":30,"time":1763460445518,"pid":34143,"hostname":"Hans-Mac-mini.local","msg":"Your wallet address is: mn_shield-addr_test1lwrcksvclrc2gkznenlnrsr9p2fnmewh0at7xfrl9smeylsjc4dqxqya5fqmn8xd5ecm8ddj0dpu66qafpegdpuy7uxtfn9scgcfqhlx9qn8kc3z"}
+{"level":30,"time":1763460445518,"pid":34143,"hostname":"Hans-Mac-mini.local","msg":"Your wallet balance is: 0"}
+{"level":30,"time":1763460445518,"pid":34143,"hostname":"Hans-Mac-mini.local","msg":"Waiting to receive tokens..."}
+{"level":30,"time":1763460445521,"pid":34143,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=0"}
+{"level":30,"time":1763460457658,"pid":34143,"hostname":"Hans-Mac-mini.local","msg":"Waiting for funds. Backend lag: 0, wallet lag: 0, transactions=8"}
+{"level":30,"time":1763460457659,"pid":34143,"hostname":"Hans-Mac-mini.local","msg":"Your wallet balance is: 198357199"}
+{"level":30,"time":1763460499689,"pid":34143,"hostname":"Hans-Mac-mini.local","msg":"Joined contract at address: 0200c4e71bfe602418f1e55a07304f8a4d8e775739efce1339e976283105ca325e49"}
+{"level":30,"time":1763460499691,"pid":34143,"hostname":"Hans-Mac-mini.local","msg":"Analyzed contract: Medical_records Contract"}
+{"level":30,"time":1763460499691,"pid":34143,"hostname":"Hans-Mac-mini.local","msg":"Found 1 functions"}
+{"level":30,"time":1763460499692,"pid":34143,"hostname":"Hans-Mac-mini.local","msg":"=== Dynamic Contract CLI ==="}
+{"level":30,"time":1763460499692,"pid":34143,"hostname":"Hans-Mac-mini.local","msg":"Contract Address: 0200c4e71bfe602418f1e55a07304f8a4d8e775739efce1339e976283105ca325e49"}
+{"level":30,"time":1763460499692,"pid":34143,"hostname":"Hans-Mac-mini.local","msg":"Available functions have been automatically detected from your contract!"}
+{"level":30,"time":1763460503429,"pid":34143,"hostname":"Hans-Mac-mini.local","msg":"🔧 Executing update_record..."}
+{"level":30,"time":1763460548813,"pid":34143,"hostname":"Hans-Mac-mini.local","msg":"Transaction 00000000a67967b8ae0bce8ad854cc9df8b4cb6a029c552905f50606bceffb2cfca05eaf added in block 2608964"}
+{"level":30,"time":1763460548813,"pid":34143,"hostname":"Hans-Mac-mini.local","msg":"✅ update_record executed successfully!"}

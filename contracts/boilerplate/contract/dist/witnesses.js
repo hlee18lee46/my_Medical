@@ -1,6 +1,7 @@
 // boilerplate/contract/src/witnesses.ts
 // Minimal stub for medical_records contract – no witnesses needed for MVP.
 export const witnesses = {};
+//export const witnesses: Record<string, (ctx: any) => unknown[]> = {};
 /*
 import fs from 'fs';
 import path from 'path';

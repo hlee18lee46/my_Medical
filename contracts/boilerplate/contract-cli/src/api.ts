@@ -47,7 +47,7 @@ import {
   CounterPrivateStateId,
   type CounterProviders,
   type DeployedCounterContract,
-} from './common-types';
+} from './common-types.js';
 import { type Config, contractConfig } from './config';
 
 
