@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Navbar from "./components/Navbar";
 import { getMidnightProvider } from "./midnight-provider";
+import { QRCodeCanvas as QRCode } from "qrcode.react"; // QR code
 
 type WalletState = {
   address?: string;
@@ -83,13 +84,16 @@ async function detectApiVersion(api: any, provider: any): Promise<string> {
   const vals = [api?.apiVersion, api?.version, provider?.apiVersion, provider?.version];
   for (const v of vals) if (typeof v === "string" && v) return v;
   const fns = [api?.getVersion, provider?.getVersion, api?.info, provider?.info];
-  for (const fn of fns)
+  for (const fn of fns) {
     try {
       if (typeof fn === "function") {
         const v = await fn.call(api ?? provider);
         if (v) return v;
       }
-    } catch {}
+    } catch {
+      // ignore
+    }
+  }
   return "—";
 }
 
@@ -116,7 +120,7 @@ export default function App() {
 
   const [doctorForm, setDoctorForm] = useState<DoctorFormState>({
     patientShieldAddr: "",
-    visitDate: new Date().toISOString().slice(0, 10), // YYYY-MM-DD
+    visitDate: new Date().toISOString().slice(0, 10),
     diagnosis: "",
     prescription: "",
     notes: "",
@@ -295,6 +299,27 @@ export default function App() {
     }
   };
 
+  // --- QR metadata payload (for patient view) ---
+  const shareUrl =
+    shieldAddr && shieldAddr !== "—"
+      ? `http://localhost:4000/api/records/${encodeURIComponent(shieldAddr)}`
+      : "";
+
+const qrPayload = JSON.stringify({
+  type: "myMedical_v1",
+  records: (patientRecords ?? []).map((r) => ({
+    visitDate: r.visitDate,
+    diagnosis: r.diagnosis,
+    prescription: r.prescription,
+    notes: r.notes,
+    doctorShieldAddr: r.doctorShieldAddr,
+    createdAt: r.createdAt,
+  })),
+});
+
+// For UI only (not encoded): show a quick summary of the latest record
+const firstRecord = (patientRecords && patientRecords[0]) || null;
+
   return (
     <div style={{ minHeight: "100vh", background: "#f9fafb" }}>
       <Navbar />
@@ -363,7 +388,7 @@ export default function App() {
           )}
         </Card>
 
-        {/* Role-specific section: Doctor – create record */}
+        {/* Doctor – create record */}
         {role === "doctor" && (
           <Card title="Doctor: Create Medical Record" style={{ marginTop: 16 }}>
             <form
@@ -475,9 +500,9 @@ export default function App() {
           </Card>
         )}
 
-        {/* Role-specific section: Patient – view their records */}
+        {/* Patient – QR + records */}
         {role === "patient" && (
-          <Card title="Patient: My Medical Records" style={{ marginTop: 16 }}>
+          <Card title="Patient: Share & View My Medical Records" style={{ marginTop: 16 }}>
             <div style={{ fontSize: 13, color: "#475569", marginBottom: 8 }}>
               Connected shield address:
               <div style={{ marginTop: 4 }}>
@@ -500,6 +525,77 @@ export default function App() {
               </div>
             </div>
 
+            {/* QR + metadata preview */}
+{/* QR + metadata preview */}
+<div
+  style={{
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 16,
+    alignItems: "flex-start",
+    marginBottom: 16,
+  }}
+>
+  <div style={{ textAlign: "center" }}>
+    <p style={{ fontSize: 13, marginBottom: 8, color: "#0f172a" }}>
+      Show this QR code to a doctor or service.
+    </p>
+    <div
+      style={{
+        background: "#ffffff",
+        padding: 8,
+        borderRadius: 12,
+        border: "1px solid #e2e8f0",
+        display: "inline-block",
+      }}
+    >
+      <QRCode value={qrPayload} size={180} includeMargin />
+    </div>
+    <p style={{ fontSize: 11, marginTop: 6, color: "#64748b" }}>
+      Encodes only your medical record history (no wallet or backend URL).
+    </p>
+  </div>
+
+  <div
+    style={{
+      flex: 1,
+      minWidth: 220,
+      fontSize: 12,
+      background: "#f8fafc",
+      borderRadius: 10,
+      border: "1px dashed #cbd5e1",
+      padding: 10,
+    }}
+  >
+    <div style={{ fontWeight: 600, marginBottom: 4, color: "#0f172a" }}>
+      QR metadata preview
+    </div>
+    <div style={{ marginBottom: 4 }}>
+      <strong>Records encoded:</strong>{" "}
+      {patientRecords ? patientRecords.length : 0}
+    </div>
+    {firstRecord ? (
+      <>
+        <div style={{ marginTop: 6 }}>
+          <strong>Latest record (summary):</strong>
+        </div>
+        <div>Date: {firstRecord.visitDate}</div>
+        {firstRecord.diagnosis && <div>Diagnosis: {firstRecord.diagnosis}</div>}
+        {firstRecord.prescription && <div>Rx: {firstRecord.prescription}</div>}
+        {firstRecord.notes && <div>Notes: {firstRecord.notes}</div>}
+      </>
+    ) : (
+      <div style={{ marginTop: 6, color: "#64748b" }}>
+        No records yet — QR will be mostly empty until a doctor adds data.
+      </div>
+    )}
+  </div>
+</div>
+
+            <div style={{ fontSize: 13, marginBottom: 6, color: "#0f172a" }}>
+              Your Records
+            </div>
+
             <button
               type="button"
               onClick={handleFetchPatientRecords}
@@ -512,11 +608,10 @@ export default function App() {
                 fontWeight: 600,
                 fontSize: 14,
                 cursor: "pointer",
-                marginTop: 4,
                 marginBottom: 12,
               }}
             >
-              Fetch My Records
+              Fetch from backend
             </button>
 
             {patientStatus && (
@@ -557,7 +652,7 @@ export default function App() {
                     }}
                   >
                     <div style={{ marginBottom: 4 }}>
-                      <strong>Visit Date:</strong> {rec.visitDate}
+                      <strong>Date:</strong> {rec.visitDate}
                     </div>
                     {rec.diagnosis && (
                       <div>
@@ -575,7 +670,7 @@ export default function App() {
                       </div>
                     )}
                     <div style={{ marginTop: 4, color: "#64748b", fontSize: 12 }}>
-                      <strong>Doctor:</strong>{" "}
+                      <strong>Doctor shield address:</strong>{" "}
                       <span style={{ wordBreak: "break-all" }}>{rec.doctorShieldAddr}</span>
                     </div>
                     <div style={{ color: "#94a3b8", fontSize: 11 }}>
@@ -588,7 +683,7 @@ export default function App() {
           </Card>
         )}
 
-        {/* Placeholder for other roles */}
+        {/* Other roles */}
         {role && role !== "doctor" && role !== "patient" && (
           <Card title={`${roleLabel(role)} dashboard`} style={{ marginTop: 16 }}>
             <p style={{ fontSize: 14, color: "#475569" }}>
